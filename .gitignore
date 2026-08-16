@@ -1,0 +1,65 @@
+# MaixCDK/CMake build trees and release artifacts
+/build/
+/build-*/
+/cmake-build-*/
+/out/
+/dist/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+Makefile
+build.ninja
+.ninja_*
+compile_commands.json
+CMakeUserPresets.json
+
+# Compiled binaries and libraries accidentally created outside build trees
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+*.exe
+*.elf
+/dart_green_detect
+
+# Captured and generated vision data. Keep Markdown test reports tracked.
+/recordings/**/*.mp4
+/recordings/**/*.avi
+/recordings/**/*.mov
+/recordings/**/*.mkv
+/recordings/**/*.jsonl
+/recordings/**/*.jpg
+/recordings/**/*.jpeg
+/recordings/**/*.png
+/recordings/**/trials/
+
+# Runtime/debug output
+*.log
+*.pid
+*.tmp
+*.bak
+/dart_green_debug/
+
+# Python caches and local virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Local editor/index state
+/.clangd
+/.cache/
+/.vscode/
+/.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
