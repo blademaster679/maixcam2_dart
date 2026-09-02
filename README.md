@@ -1,361 +1,331 @@
-# MaixCAM2 飞镖绿灯识别
+# MaixCAM2 飞镖绿灯与装甲板制导 v0.2
 
-这是当前设备端实现：OS04D10 输出 `1280x720 RGB888`，使用 MaixCDK 原生 LAB
-阈值与 `Image::find_blobs()` 全图检测，不依赖 OpenCV。程序跟踪单个绿灯，向标准输出逐帧
-发送 JSON Lines。
+本工程面向 RoboMaster 飞镖视觉。当前无模型实时档为 `480×360@60fps`；
+`640×480` 保留为画质优先档，但不作为稳定 60 FPS 配置。v0.2 使用
+“捕获锥/预测 ROI 多尺度绿灯候选 + 任意滚转双灯条几何 + 局部 YOLO11n-Pose +
+视线坐标跟踪/全局运动补偿”的混合链路，并通过统一 `TargetEstimate` JSON v2
+输出控制安全状态。
 
-## 已实现的检测链路
+代码和工具链已经实现；比赛模型、相机标定、目标实物尺寸和 300 次实机验收不是
+可以由代码自动生成的占位数据。当前默认配置因此保持
+`npu.enabled=false`、`target_geometry.pose_enabled=false`。完整完成度和仍需实测的
+项目见 [v0.2 实施状态](docs/IMPLEMENTATION_STATUS_V0.2.md)。
 
-- 分别检测绿色光晕和饱和白色圆芯；圆芯必须同时满足周围存在绿色光晕和最小尺寸门限。
-- 对候选计算绿色优势、绿像素占比、局部亮度差、密度、长宽比、圆度、核心/光晕偏差、光轴位置先验和时序一致性。
-- 关闭全局 Blob 链式合并，避免绿色墙面、地面和机构把灯连成一个大区域。
-- 不设置固定最大面积；锁定后使用带上限的位置门控、同源/跨源尺寸门控和最低关联分数拒绝异常测量。
-- 远距离使用绿色光晕，近距离优先使用完整的饱和圆芯，避免跟随光晕边缘碎片。
-- 六状态卡尔曼滤波器跟踪 `[cx, cy, vx, vy, log_size, size_rate]`。
-- 同一空间位置和相近尺寸的候选在最近 5 帧命中至少 3 帧才进入 `TRACKING`；未确认候选不向控制端输出有效坐标，锁定后连续丢失 5 帧回到 `LOST`。
-- 仅对输出点做 Brown-Conrady 畸变反解，再由内参计算 yaw/pitch。
+## 检测链路
 
-## 构建与部署
+- 在原始 480×360 RGB 图上组合 `2G-R-B`、绿色占比、局部背景均值/方差、亮度与
+  饱和白芯，并用 `2/4/6/9/14 px` 多尺度响应搜索微小灯点。SEARCH/REACQUIRE
+  扫描 ±6.5° 捕获锥，锁定后扫描预测点周围 72 px ROI；实际漏检立即回到全锥。
+- 每次传统检测记录最多 5 个绿灯候选；全图 LAB 路径仍能留下锥外调试候选，但任何
+  锥外候选都不能进入控制。
+- 不再使用“越靠近画面中心分数越高”的软先验。内部最多维护 3 条候选假设，以
+  外观、尺度、运动残差和视觉全局运动更新。
+- 主跟踪器在归一化视线坐标中估计视线、角速度、尺度和尺度变化率；KLT 风格稀疏
+  光流加 RANSAC 相似变换补偿相机扫动和滚转。
+- 状态固定为 `SEARCH → ACQUIRING → TRACKING → COASTING → REACQUIRE`。
+  预测最多 2 帧或 35 ms 可用于控制，之后仍可报告但
+  `safe_for_control=false`；丢失后立即恢复全捕获锥搜索。
+- 按 `armor.expected_color=red|blue` 检测任意角度细长灯条，配对检查平行度、长度、
+  色彩响应一致性、间距以及与绿灯的相对几何。`auto` 只允许调试，并强制控制无效。
+- 五关键点顺序固定为绿灯、左灯条两端、右灯条两端。端点完整且分离充分时，可用
+  带畸变处理的平面 PnP 求位姿；重投影超限时位姿无效。
+- 接近阶段连续 3 次装甲几何有效后，在 100 ms 内从绿灯平滑切到装甲中心。
+- NPU 只处理 `clamp(8×绿灯直径, 64, 384)` 的候选 ROI。搜索时轮询前三候选，
+  跟踪时优先当前轨迹；启用模型后传统检测与 NPU 自动交错运行，各约 30 Hz，
+  Kalman/控制输出保持 60 Hz，避免把两段延迟叠在同一帧。
 
-编译应在 `x86_64` Ubuntu（推荐 Ubuntu 20.04 及以上）或 WSL2 中完成，再把
-`AArch64` 程序传到 MaixCAM2。不要把在普通 PC 上原生编译出的 `x86-64` 程序复制到设备运行。
-完整的官方流程见 [MaixCDK 快速开始](https://wiki.sipeed.com/maixcdk/doc/) 和
-[MaixCDK APP 框架指南](https://github.com/sipeed/MaixCDK/blob/main/docs/doc_zh/convention/app.md)。
+## 帧率策略与当前结果
 
-### 1. 安装 MaixCDK
+默认配置在每两帧执行一次传统检测（30 Hz），计划跳过帧由 Kalman 更新，控制估计仍按
+相机的 60 Hz 节拍输出。全捕获锥每 30 次传统检测刷新一次，真实漏检立即恢复全锥；
+全局运动补偿也为 30 Hz，并且默认仅在目标锁定后启用。终端 JSON 降到 10 Hz 且不
+序列化候选数组，避免逐行 `flush` 限制相机循环。
 
-已经有可用 MaixCDK 环境时可跳过本节。
+USB 有线板端最坏负载实测中，480×360 达到 **59.985 FPS**，传统检测 P95 为
+15.17 ms、视觉运动补偿 P95 为 6.22 ms、总处理 P95 为 19.82 ms，估算丢帧为 0；
+同一版本的 640×480 为 59.38 FPS、总处理 P95 31.05 ms，未通过 30 ms 门槛。
+正式配置又连续运行 185 分钟，达到 60.001 FPS、总处理 P95 17.37 ms，估算丢帧率
+0.0072%，RSS 无增长。因此正式档选择 480×360。九段无模型回放和完整限制见
+[帧率优化报告](reports/PERFORMANCE_OPTIMIZATION_2026-08-31.md)和
+[板端实测](reports/DEVICE_BENCHMARK_2026-09-01.md)。录像缺少逐帧真值，输出率不能
+解释为真实召回率或误报率；长测没有芯片温度字段，温度上限仍需单独记录。
+
+## 下一步执行计划（2026-09-02）
+
+下面只列尚未完成的工作。v0.2 检测、跟踪、JSON、回放评测、模型接口和无模型
+60 FPS 优化已经完成，不再重复开发；每一步只有达到“完成条件”后才进入依赖它的下一步。
+
+最近一次板端实测的复现基线为 MaixCAM2 + OS04D10、系统镜像
+`maixcam2-2026-05-29-maixpy-v4.12.5`、MaixPy `4.12.5`、MaixCDK
+`2a0502ecb20e5695b28580b3689492b7a228f9e4` 和本工程 `v0.2.0`。二进制、配置与安装包
+哈希记录在[实施状态](docs/IMPLEMENTATION_STATUS_V0.2.md)；升级其中任一项后必须建立新的
+基线记录，不能沿用本次性能结论。
+
+| 步骤 | 工作和产物 | 完成条件 |
+| --- | --- | --- |
+| 1. 固化软件基线 | 本次提交归档源码、配置、测试、工具和精炼报告；保留上述版本和哈希记录；提交后还需将 v0.1.5/v0.2 安装包保存到团队制品库 | 新电脑可按本文重新构建；Git 中不含录像、训练集、运行日志和模型二进制；制品库可取回两个安装包 |
+| 2. 核验九段现有录像 | 人工标注目标/无目标区间，并为关键帧补充绿灯中心、五关键点、颜色和可见性；用 `evaluate_replay.py --enforce` 生成有真值的基线 | 九段录像不再只报告“输出率”；得到捕获延迟、控制级误报、候选召回、关键点和视线误差 |
+| 3. 完成 480×360 相机标定 | 固定比赛镜头与安装姿态，标定内参/畸变；扫描 100/200/400/800/1600 μs、增益和白平衡，分别保存红蓝比赛配置 | 25 m 绿灯仍可见、运动拖影不超过 1.5 px；重投影误差和参数版本有记录 |
+| 4. 完成目标几何标定 | 测量本赛季灯条长度、两灯条中心距、绿灯相对装甲中心偏移，填入 `target_geometry.*`；分别验证红、蓝和全滚转 | 完整灯条时 PnP 重投影 P95 ≤2 px；退化情况不输出有效位姿 |
+| 5. 建立模型数据集 | 按完整录像和场地采集/划分数据，人工标注五关键点；复核视频 0/1 的 LED 屏硬负样本，并补齐距离、颜色、滚转、模糊和无目标场景 | ≥1 万正 ROI、≥2 万硬负 ROI；第三场地锁定测试；相邻帧不跨集合 |
+| 6. 训练并转换 Pose 模型 | 训练 YOLO11n-Pose，比较 192/256/320 输入；导出固定输入 ONNX，选 100 张代表图做 INT8 校准，通过 Pulsar2 生成 NPU2/NPU1 AXMODEL 和 MUD | 锁定测试集正候选召回 ≥99.5%、关键点 P95 ≤2 px，且控制级误报为 0 |
+| 7. 完成 NPU 板端验收 | 仅替换 `models/runtime/` 产物并启用已经实现的 NPU 路径，重新打包；测 30 分钟 FPS、端到端/NPU P95、丢帧、RSS、温度和降频 | 持续 60 FPS；端到端 P95 ≤30 ms、NPU P95 ≤20 ms、丢帧 <0.1%，无内存增长或热失效 |
+| 8. 接入控制与台架闭环 | 为同一个 `TargetEstimate` 增加 UART/CAN 序列化、序号、时间同步、校验和和超时失效；先做录制数据回灌和台架硬件在环 | 控制端只接受 `safe_for_control=true`；断流、陈旧预测、模型失败和错误颜色均能在限定时间内安全失效 |
+| 9. 完成赛场验收 | 在 15/20/25 m、±5°、红蓝、全滚转、不同光照和等效运动下执行至少 300 次独立测试，锁定配置后禁止用测试集继续调参 | 达到本文“验收原则”的捕获率、有效率、最长失效间隔、误差和零控制级误报要求 |
+
+步骤 2～4 可以并行准备，但步骤 6 必须等待步骤 5 的数据集冻结，步骤 7 必须等待模型
+通过离线锁定测试，步骤 8～9 必须使用已经通过板端验收的同一二进制、模型和配置。
+
+### OS04A10 360 FPS 独立研发线
+
+该工作不替代上述比赛主线，也不在现有稳定分支上直接试写寄存器。建议新建独立分支并按
+以下顺序推进：
+
+1. 向 Sipeed/模组厂确认 MaixCAM2 硬件兼容性，取得 `640×360@360fps Linear RAW10`
+   的完整寄存器表、XCLK/PLL/HTS/VTS、MIPI lane/rate/map 和曝光时序；若无法公开，取得
+   预编译传感器对象或最小采集程序。
+2. 以 MaixCDK `dev` 中 OS04D10 640×360@120 的实现为模板，只建立 OS04A10 RAW/NV21
+   采集样例；关闭 AI-ISP，不接入飞镖检测，先验证帧号、时间戳及 Bayer 排列。
+3. 按 120 → 180 → 240 → 360 FPS 逐级点亮；每一级检查实际帧率、重复帧、MIPI
+   CRC/ECC、曝光上限、温度和 30 分钟稳定性，失败时保留上一个稳定档。
+4. 采集稳定后再调整 ISP、重新标定内参/畸变，并将采集线程与识别线程解耦。当前约
+   17 ms 的检测链路不能逐帧处理 360 FPS，应只消费最新帧并用准确时间戳融合。
+5. 只有在同一模组、系统镜像和室温/热机条件下持续达到 ≥359 FPS 且无异常丢帧后，
+   才把该模式合入比赛主线；否则保留 120/180/240 FPS 中的最高稳定模式。
+
+## 每次打开 WSL2 终端
+
+以下环境设置只对当前终端有效，因此新终端都要执行：
 
 ```bash
-sudo apt update
-sudo apt install -y \
-    git cmake build-essential \
-    python3 python3-pip python3-venv \
-    autoconf automake libtool
-
-mkdir -p ~/maix
-git clone https://github.com/Sipeed/MaixCDK ~/maix/MaixCDK
-
-python3 -m venv ~/maix/maixcdk-venv
 source ~/maix/maixcdk-venv/bin/activate
-python -m pip install -U pip
-python -m pip install -U -r ~/maix/MaixCDK/requirements.txt
-
 export MAIXCDK_PATH=~/maix/MaixCDK
-maixcdk --help
+# USB 有线连接；若使用 Windows 网络共享则换成实际的 192.168.137.x
+export MAIXCAM2_HOST=10.18.197.1
+cd /home/blade_master/pnx/maixcam2_dart
 ```
 
-每次打开新终端后，需要重新激活 Python 环境并指定 MaixCDK 路径：
+也可以把前两条环境命令加入 `~/.bashrc`。比赛版本应固定与板端 MaixPy 对应的
+MaixCDK commit，以避免 API/ABI 随升级变化：
 
 ```bash
-source ~/maix/maixcdk-venv/bin/activate
-export MAIXCDK_PATH=~/maix/MaixCDK
-```
-
-也可以将上面两行手动加入 `~/.bashrc`，以后打开 Bash 终端时自动加载。
-
-### 2. 固定比赛使用的 MaixCDK 版本
-
-板端系统、MaixPy、MaixCDK 和厂商库可能随版本改变。开发初期可以使用同期最新版；准备比赛
-版本时，建议固定与板端 MaixPy 对应的 MaixCDK commit，避免重新编译时出现 API/ABI 不兼容
-或行为变化。
-
-在 MaixCAM2 终端查询 MaixPy 版本：
-
-```bash
+# 板端查询版本
 pip show MaixPy
+
+# 主机按对应 MaixPy release 给出的 maixcdk_version 文件固定 commit
+git -C ~/maix/MaixCDK checkout <official-commit>
 ```
 
-然后在对应的 [MaixPy Release](https://github.com/sipeed/MaixPy/releases) 中查看
-`maixcdk_version_*.txt`，在电脑上切换到文件指定的 commit：
+官方入口：[MaixCDK 快速开始](https://wiki.sipeed.com/maixcdk/doc/)、
+[APP 约定](https://github.com/sipeed/MaixCDK/blob/main/docs/doc_zh/convention/app.md)。
+
+## 编译、打包和上板
+
+首次或增删源文件后完整构建；只改已有源文件时可用 `build2`：
 
 ```bash
-git -C ~/maix/MaixCDK checkout <官方指定的 commit>
-```
-
-升级板端系统或 MaixPy 后，应重新确认对应的 MaixCDK commit。正式参赛时建议同时记录板端
-系统版本、MaixPy 版本、MaixCDK commit、本工程版本和配置文件版本。
-
-### 3. 编译程序
-
-进入本项目根目录，并确认上一节的虚拟环境和 `MAIXCDK_PATH` 已生效：
-
-```bash
-cd /path/to/maixcam2_dart
 maixcdk build -p maixcam2
-```
+# maixcdk build2
 
-第一次编译会下载 MaixCAM2 交叉编译工具链。成功后主要产物为：
-
-```text
-build/dart_green_detect    AArch64 可执行文件
-build/dl_lib/              随程序部署的动态库
-```
-
-可以检查目标架构和文件是否存在：
-
-```bash
 file build/dart_green_detect
 ls -lh build/dart_green_detect build/dl_lib
 ```
 
-`file` 的结果应包含 `ARM aarch64`，不应是 `x86-64`。仅修改已有源文件时可使用增量编译：
+`file` 必须显示 AArch64，不能把主机 x86-64 回放程序复制到板端。生成 APP：
 
 ```bash
-maixcdk build2
+maixcdk release -p maixcam2
+unzip -l dist/dart_green_detect_v0.2.0.zip
 ```
 
-增加或删除源文件后，必须重新执行完整的 `maixcdk build -p maixcam2`。编译异常时可以使用：
-
-```bash
-maixcdk build --verbose -p maixcam2
-```
-
-必要时清理后重新编译：
-
-```bash
-maixcdk distclean
-maixcdk build -p maixcam2
-```
-
-### 4. 连接设备并确认相机
-
-在 MaixCAM2 的“设置 -> 设备信息”中查看 IP。下面以 `192.168.1.123` 为例，执行前替换为
-实际地址：
-
-```bash
-export MAIXCAM2_HOST=192.168.1.123
-ssh root@"$MAIXCAM2_HOST"
-```
-
-MaixCAM2 默认 SSH 用户名为 `root`，密码为 `sipeed`。在板端查询当前相机 Sensor：
-
-```bash
-python3 -c 'from maix import camera; print(camera.get_device_name())'
-```
-
-本工程当前按 OS04D10 的 `1280x720 RGB888 @ 60fps` 编写。如果 Sensor 不是 OS04D10，需先
-确认其是否支持该模式，并重新标定曝光、白平衡、LAB 阈值和相机内参。
-
-### 5. 快速上传并通过 SSH 调试
-
-以下命令在电脑的项目根目录执行：
+快速 SSH 调试：
 
 ```bash
 ssh root@"$MAIXCAM2_HOST" 'mkdir -p /root/dart_green_detect'
-
-scp build/dart_green_detect \
-    config/green_detector.conf \
-    main.sh \
+scp build/dart_green_detect config/green_detector.conf main.sh \
     root@"$MAIXCAM2_HOST":/root/dart_green_detect/
+scp -r build/dl_lib root@"$MAIXCAM2_HOST":/root/dart_green_detect/
 
-scp -r build/dl_lib \
-    root@"$MAIXCAM2_HOST":/root/dart_green_detect/
-```
-
-相机不能同时被 Launcher 或其它应用占用。可以先连接 MaixVision，让 Launcher 自动退出；
-也可以 SSH 登录设备后停止它：
-
-```bash
 ssh root@"$MAIXCAM2_HOST"
-killall launcher_daemon
-```
-
-在板端运行程序：
-
-```bash
 cd /root/dart_green_detect
 chmod +x dart_green_detect main.sh
 ./main.sh
 ```
 
-程序不打开窗口。成功启动后，标准输出会逐帧打印检测 JSONL；配置警告与错误写到标准错误。
-按 `Ctrl+C` 停止。需要分别保存结果和日志时使用：
+`main.sh` 会同时加入应用 `dl_lib`、`/opt/lib` 和系统动态库路径，避免
+`libax_sys.so` 找不到，并补齐 MaixCDK `nn` 依赖的 ALSA SONAME 别名。不要用会覆盖系统路径的
+`LD_LIBRARY_PATH=./dl_lib ./dart_green_detect`。
+
+正式安装：
 
 ```bash
-./main.sh > detections.jsonl 2> detector.log
+scp dist/dart_green_detect_v0.2.0.zip root@"$MAIXCAM2_HOST":/root/
+ssh root@"$MAIXCAM2_HOST" \
+  '/maixapp/apps/app_store/app_store install /root/dart_green_detect_v0.2.0.zip'
+ssh root@"$MAIXCAM2_HOST" \
+  'cd /maixapp/apps/dart_green_detect && sh ./main.sh'
 ```
 
-`main.sh` 会定位应用自身目录，将应用的 `dl_lib`、MaixCAM2 平台库目录 `/opt/lib` 和系统原有
-动态库路径合并到 `LD_LIBRARY_PATH`，然后使用配置文件的绝对路径启动程序。不要再使用
-`LD_LIBRARY_PATH=./dl_lib ./dart_green_detect`：该写法会覆盖系统原有路径，导致
-`libax_sys.so` 等 MaixCAM2 平台库无法被加载。
-
-### 6. 打包并安装为 MaixCAM2 APP
-
-SSH 调试通过后，在电脑的项目根目录生成正式安装包：
+若 WSL2 mirrored 模式下 PowerShell 能连而 Linux `ssh` 停在 `O_NONBLOCK`，可直接在
+WSL 终端调用 Windows OpenSSH：
 
 ```bash
-maixcdk release -p maixcam2
-ls -lh dist/*.zip
+/mnt/c/Windows/System32/OpenSSH/ssh.exe root@"$MAIXCAM2_HOST"
+
+PKG_WIN=$(wslpath -w "$(realpath dist/dart_green_detect_v0.2.0.zip)")
+/mnt/c/Windows/System32/OpenSSH/scp.exe "$PKG_WIN" \
+    root@"$MAIXCAM2_HOST":/root/
 ```
 
-当前 `app.yaml` 的版本为 `0.1.4`，预计产物为
-`dist/dart_green_detect_v0.1.4.zip`。`app.yaml` 会将
-`config/green_detector.conf` 安装为应用根目录下的 `green_detector.conf`，并包含本工程维护的
-`main.sh`；发布工具会加入可执行文件和 `dl_lib`。本工程显式提供启动脚本，不依赖不同版本
-MaixCDK/maixtool 是否自动生成脚本。
-
-可以在上传前检查安装包内容：
+查询板端相机 Sensor：
 
 ```bash
-unzip -l dist/dart_green_detect_v0.1.4.zip
+python3 -c 'from maix import camera; print(camera.get_device_name())'
 ```
 
-其中应包含 `main.sh`、`dart_green_detect`、`green_detector.conf` 和 `dl_lib/`。
+## 相机与几何标定
 
-在电脑上上传安装包：
+[默认配置](config/green_detector.conf) 是安全工程起点，不是比赛标定结果。
+
+1. 固定镜头、焦距、安装姿态和 480×360 模式，使用棋盘格重新求
+   `fx/fy/cx/cy/k1/k2/p1/p2/k3`，不能缩放沿用 1280×720 参数。
+2. 关闭自动曝光和自动白平衡。依次测试 `100/200/400/800/1600 μs` 及增益，选择
+   “运动拖影不超过 1.5 px 且 25 m 灯仍可见”的最长曝光；500 μs 只是起点。
+3. 实测当前赛季两灯条中心距、灯条长度、绿灯相对装甲中心距离，填入
+   `target_geometry.*` 后再启用位姿。
+4. 红蓝比赛配置必须分别保存，并显式设置 `armor.expected_color`。
+
+更换镜头、分辨率、曝光、目标实物或安装方向后都要重新标定。
+
+## 主机测试和九段视频回放
 
 ```bash
-scp dist/dart_green_detect_v0.1.4.zip root@"$MAIXCAM2_HOST":/root/
-```
+cmake -S tests -B build/tests -DCMAKE_BUILD_TYPE=Release
+cmake --build build/tests -j
+ctest --test-dir build/tests --output-on-failure
 
-在 MaixCAM2 上安装：
-
-```bash
-/maixapp/apps/app_store/app_store install \
-    /root/dart_green_detect_v0.1.4.zip
-```
-
-安装完成后，可从设备应用菜单启动，也可以在 SSH 终端验证：
-
-```bash
-cd /maixapp/apps/dart_green_detect
-sh ./main.sh
-```
-
-Launcher 会按照官方约定使用 `sh` 执行 `main.sh`，不依赖压缩包是否保留脚本的可执行权限。
-`main.sh` 还会恢复发布工具可能丢失的二进制可执行权限。正式安装后优先通过 `main.sh` 启动，
-因为它会自动配置 `LD_LIBRARY_PATH`。也可以在电脑项目
-目录执行 `maixcdk deploy -p maixcam2` 生成二维码，再使用设备的应用商店扫码安装。
-
-如需开机自动运行，在设备中选择“设置 -> Boot Startup -> Dart Green Light Detector”。
-
-### 常见部署问题
-
-- `maixcdk: command not found`：重新激活 `maixcdk-venv`，并设置 `MAIXCDK_PATH`。
-- 相机打开失败或提示资源占用：确认 Launcher 和其它相机应用已经退出。
-- `error while loading shared libraries: libax_sys.so`：执行
-  `find /opt /usr /lib -name 'libax_sys.so*' 2>/dev/null`。如果 `/opt/lib` 中存在该库，通过
-  `main.sh` 启动；如果完全不存在，应让板端系统、MaixPy 与 MaixCDK 版本匹配，不要只复制
-  单个 `libax_sys.so`。
-- 其它 `error while loading shared libraries`：确认已上传完整的 `build/dl_lib`，并通过
-  `main.sh` 启动。
-- 找不到 `green_detector.conf`：从包含配置文件的应用目录运行，或向 `--config` 传入绝对路径。
-- `camera did not accept the configured resolution`：检查 Sensor、板端系统版本以及
-  `1280x720@60fps` 模式是否匹配。
-
-## 输出格式
-
-每帧输出一行：
-
-```json
-{"timestamp_us":123456,"valid":true,"state":"TRACKING","center_x":641.2,"center_y":359.7,"bbox_x":635,"bbox_y":354,"bbox_w":13,"bbox_h":12,"apparent_size":12.49,"yaw_rad":0.000293,"pitch_rad":0.000073,"confidence":0.91}
-```
-
-`valid=false` 表示该帧没有可供控制端使用的确认观测；中心、外接框、角度和置信度均为零。
-`CANDIDATE` 表示检测到了尚未完成 3/5 帧同目标确认的候选，因此同样保持 `valid=false`。
-锁定期间若测量不满足位置、尺寸或关联分数硬门控，该帧也输出 `valid=false`，卡尔曼状态只预测不更新。
-
-## 上板前必须标定
-
-[默认配置](config/green_detector.conf) 中的 LAB、候选评分和时序门控参数已用当前五段视频调节，
-其中三个新样本覆盖地面反光、背景海报和零散小亮点干扰；它们尚未经过纯负样本和完整比赛距离
-逐帧标注验证。曝光、增益、白平衡和内参仍是启动模板。尤其是
-`camera.exposure_us=0`、`camera.gain=-1` 和 `camera.manual_white_balance=false` 会保留自动模式，
-只适合采集标定数据；程序会在标准错误中给出警告。
-
-建议先固定镜头与光圈，然后完成以下步骤：
-
-1. 在 `0.5、1、3、5、10、15 m` 采集目标与干扰物，覆盖暗场、室内灯、反光和运动模糊。
-2. 从远距离灯芯与近距离光晕分别统计 LAB 范围，更新 `lab.core` 和 `lab.halo`。
-3. 逐步缩短曝光，选择既不让近距离光斑完全失真、又能保留 15 m 灯点的固定曝光与增益。
-4. 固定白平衡增益并重新采集一次；自动曝光或白平衡开启时得到的阈值不能直接用于比赛。
-5. 用棋盘格求 `fx/fy/principal_x/principal_y/k1/k2/p1/p2/k3`，不要仅由标称视场角估算。
-
-调试时可开启 `debug.enabled`。保存项包含未绘制的 JPEG 原图和同名 JSON 候选信息；
-`debug.max_saved_frames` 用于限制写盘数量。正式运行应关闭调试。
-
-## 主机侧测试
-
-测试只编译平台无关的配置、角度和跟踪核心，不需要 MaixCDK 或相机：
-
-```bash
-cmake -S tests -B build-host
-cmake --build build-host
-ctest --test-dir build-host --output-on-failure
-```
-
-在包含中文路径的 Windows 工作区中，MinGW Makefiles 可能无法创建对象文件；可将第一条命令
-改为 `cmake -S tests -B build-host -G Ninja`。
-
-这些测试不能替代真实灯光数据验收。98% 召回率、5 像素中心误差 P95 和 `0.15 deg`
-角误差 P95 需要使用人工标注的数据集另行测量。
-
-## 实拍视频离线回放与可视化
-
-`tools/video_replay` 提供主机侧 OpenCV 回放工具。它复用正式程序的配置解析、候选评分、
-时序关联和卡尔曼跟踪代码，仅使用 OpenCV 适配 MaixCDK 的 LAB `find_blobs()`。因此它适合
-快速调参和检查漏检区间，但 OpenCV 与 MaixCDK 的 Blob 轮廓、合并和圆度实现存在少量差异，
-最终阈值仍需在 MaixCAM2 实机上确认。
-
-Ubuntu/WSL2 安装依赖并编译：
-
-```bash
-sudo apt update
 sudo apt install -y libopencv-dev ffmpeg
-
-cmake -S tools/video_replay -B build-video-replay -DCMAKE_BUILD_TYPE=Release
-cmake --build build-video-replay -j
+cmake -S tools/video_replay -B build/video-replay -DCMAKE_BUILD_TYPE=Release
+cmake --build build/video-replay -j
 ```
 
-处理当前五段视频（旧的 `0/1.mp4` 和新录制的 `2/3/4.mp4`）：
+单段回放默认先转换到部署分辨率 480×360；只有分析原分辨率时才加
+`--native-resolution`：
 
 ```bash
-mkdir -p recordings/maixcam2/2026-07-03/results_v0.1.4
-
-for id in 0 1; do
-    build-video-replay/dart_video_replay \
-        --input "recordings/maixcam2/2026-07-03/${id}.mp4" \
-        --output "recordings/maixcam2/2026-07-03/results_v0.1.4/${id}_detected.mp4" \
-        --jsonl "recordings/maixcam2/2026-07-03/results_v0.1.4/${id}_detections.jsonl" \
-        --config config/green_detector.conf
-done
-
-mkdir -p recordings/maixcam2/2026-07-03/new_2026-08-16/results
-for id in 2 3 4; do
-    build-video-replay/dart_video_replay \
-        --input "recordings/maixcam2/2026-07-03/new_2026-08-16/${id}.mp4" \
-        --output "recordings/maixcam2/2026-07-03/new_2026-08-16/results/${id}_detected_v0.1.4.mp4" \
-        --jsonl "recordings/maixcam2/2026-07-03/new_2026-08-16/results/${id}_detections_v0.1.4.jsonl" \
-        --config config/green_detector.conf
-done
+build/video-replay/dart_video_replay \
+  --input recordings/maixcam2/2026-08-30_usb/2.mp4 \
+  --output /tmp/2_detected_v0.2.mp4 \
+  --jsonl /tmp/2_detected_v0.2.jsonl \
+  --config config/green_detector.conf
 ```
 
-视频中会绘制全部候选框、最终检测框、滤波后中心、跟踪状态、置信度、候选数量、单帧耗时、
-平滑检测 FPS 和累计平均检测 FPS。输出视频保持原视频分辨率、播放帧率、时长和帧数；显示的
-`Detector FPS` 是 x86 主机上的 OpenCV 适配层加检测器耗时，不代表 MaixCAM2 实机帧率。
-逐帧 JSONL 可用于进一步统计或与人工标注对比。
+九段全量回归：
 
-当前版本还针对地面反光、海报和小亮点误锁增加了四层保护：只有同一物理候选才能累计 3/5 帧
-确认；白色圆芯周围必须有足够比例的绿色像素；已锁定目标使用有上限的位置/尺寸硬门控；中心和
-初始尺寸先验只在捕获阶段生效，避免锁定后被背景高分候选拉走。默认配置使用以光轴为中心、半径
-`120 px` 的软先验；这符合当前相机正对飞镖架的安装方式。如果目标允许长期偏离画面中心，应
-增大 `detector.center_prior_radius_px` 或降低 `score.weight_center_prior`。
+```bash
+python3 tools/run_v02_regression.py \
+  --input-dir recordings/maixcam2/2026-08-30_usb \
+  --output-dir recordings/maixcam2/2026-08-30_usb/results_v0.2
+```
 
-同一回放工具下，旧结果与当前默认配置的结果如下：
+输出包括九个叠加可视化视频、逐帧 JSONL、`replay_summaries.json`、
+`report_v0.2.json` 和 `REPORT_v0.2.md`。未标注录像的有效输出率不是准确率；使用
+[区间标注示例](config/regression_annotations.example.json) 后，报告才会计算目标出现后的
+捕获延迟和无目标区间控制级误报。候选召回、关键点误差、视线角误差和错误换轨还需要
+[逐帧真值示例](config/frame_ground_truth.example.jsonl)：
 
-| 输入 | 配置 | 分辨率 | 总帧数 | 有效观测帧 | `TRACKING` 帧 | 主机平均检测 FPS |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| `0.mp4` | 改进前 | 1920x1080 | 353 | 44（12.5%） | 46（13.0%） | 1.714 |
-| `0.mp4` | v0.1.4 | 1920x1080 | 353 | 350（99.2%） | 351（99.4%） | 66.272 |
-| `1.mp4` | 改进前 | 1280x720 | 295 | 27（9.2%） | 29（9.8%） | 12.531 |
-| `1.mp4` | v0.1.4 | 1280x720 | 295 | 292（99.0%） | 293（99.3%） | 124.626 |
+```bash
+python3 tools/evaluate_replay.py RESULT.jsonl \
+  --ground-truth-jsonl frame_ground_truth.jsonl \
+  --output-json reports/generated/replay.json \
+  --output-markdown reports/generated/replay.md --enforce
+```
 
-抽样检查中，检测框从远距离小灯点连续增长到近距离饱和圆芯，并保持在圆芯中心。上述比例只
-表示检测器在两段“绿灯始终存在”的正样本中有输出，不是召回率或准确率；尚未逐帧人工标注，
-也没有纯负样本可测量误检率。三个带干扰的新视频的详细对比见
-[`TEST_REPORT_v0.1.4.md`](recordings/maixcam2/2026-07-03/new_2026-08-16/TEST_REPORT_v0.1.4.md)。
-`0.mp4` 不是程序当前配置的 `1280x720` 采集模式，回放工具会按
-分辨率同步缩放内参、空间门限和卡尔曼位置噪声。最终仍需在 MaixCAM2 实机上确认 MaixCDK
-Blob 行为和帧率，并用灯灭、其它绿色物体、反光、运动模糊及完整比赛距离的视频继续验收。
+## 数据集与关键点模型
+
+数据要求、目录结构、关键点顺序和 Pulsar2 步骤见
+[模型说明](models/README.md)。关键工具：
+
+```bash
+# 从回放候选导出 8×直径 ROI，供标注或硬负挖掘
+python3 tools/dataset/extract_candidate_rois.py \
+  --video VIDEO.mp4 --jsonl RESULT.jsonl --output DATASET_ROIS
+
+# 完整录像分组，第三场地锁定为最终测试，防止相邻帧泄漏
+python3 tools/dataset/split_by_sequence.py \
+  --manifest DATASET_ROIS/manifest.jsonl --output SPLITS \
+  --test-venue venue_c
+
+python3 tools/dataset/validate_pose_dataset.py --root POSE_DATASET
+
+# 选 100 张覆盖距离/颜色/模糊/场地的 INT8 代表图
+python3 tools/dataset/select_calibration_images.py \
+  --manifest DATASET_ROIS/manifest.jsonl --dataset-root DATASET_ROIS \
+  --output CALIBRATION_100 --count 100
+```
+
+训练/导出为固定输入 ONNX 后，必须按官方 MaixCAM2 手动 Pulsar2 流程生成
+NPU2/NPU1 两个 `.axmodel` 和 `.mud`；在线转换目前只覆盖 Detect。转换后执行：
+
+```bash
+python3 tools/model/stage_runtime_model.py --mud /path/to/dart_target_pose.mud
+```
+
+模型会进入 `models/runtime/`，发布时安装为应用的 `models/`。确认实机 P95 后再把配置改为：
+
+```ini
+npu.enabled=true
+npu.required=true
+npu.model_path=models/dart_target_pose.mud
+npu.input_size=256
+```
+
+## JSON v2 和控制语义
+
+程序内部每帧生成 `TargetEstimate`。终端默认每 6 帧输出一行 JSON（60 FPS 时约 10 Hz）；
+v2 包含：时间戳、测量年龄、五级状态、是否预测、传统检测是否运行/耗时、
+`safe_for_control`、绿灯、双灯条/装甲中心、可选位姿、瞄准点、相机系单位视线、
+yaw/pitch、角速度、协方差和模型耗时；仅在 `debug.log_candidates=true` 时附候选列表，
+同时保留 v0.1 的平铺绿灯字段。
+统一 C++ 检测入口为 `process(frame, timestamp_us, MotionPrior*)`；第三个参数可传
+`nullptr`，后续接入 ICM-42688 时无需更改检测/控制数据结构。
+
+控制端必须以 `safe_for_control` 为最终门，不能只看 `valid`：预测超过 2 帧/35 ms、
+颜色为 auto、NPU 已启用但模型不可用/不一致等情况都会报告状态但禁止控制。
+
+板端日志还包含 `processing_ms`、`capture_interval_us` 和 `rss_kb`。短时逐帧性能测量可临时设置：
+
+```ini
+debug.json_log_every_n_frames=1
+debug.log_candidates=false
+```
+
+应重定向到板端文件，避免 SSH 终端渲染影响循环。完成 30 分钟运行后：
+
+```bash
+python3 tools/evaluate_device_log.py detections.jsonl \
+  --output reports/generated/device_30min.json
+```
+
+脚本检查持续时间、端到端 P95、NPU P95、估算丢帧率和 RSS 增长。温度/降频仍需同时
+在板端系统日志中观察。
+
+## 验收原则
+
+离线门槛为正候选召回 ≥99.5%、关键点原图 P95 ≤2 px，并在锁定硬负测试集保持
+控制级误报为 0。当前实机要求 480×360@60fps、端到端 P95 ≤30 ms、模型 P95 ≤20 ms、
+丢帧率 <0.1%、30 分钟无持续内存增长。最终还需至少 300 次独立 15–25 m 试验，覆盖
+±5°、红蓝、全滚转和等效运动；指标详见实施状态文档。
+
+“接近 100%”只对已定义的距离、速度、光照、捕获锥和测试分布成立。低置信度结果必须
+失效保护，不能为追求表面连续率而伪装成有效控制量。
+
+## Git 与大文件
+
+源代码、配置模板、脚本、Markdown 报告和模型契约适合提交 GitHub。原始/结果视频、
+训练数据、`.pt/.onnx/.axmodel`、构建目录和发布包默认忽略。若团队确实需要版本化视频或
+模型，应单独评估 Git LFS 配额，不要把生成结果混入普通 Git 历史。
+
+`.clangd` 含本机 SDK/工具链绝对路径，因此保持忽略；新电脑先生成
+`build/compile_commands.json`，再执行 `cp .clangd.example .clangd`，必要时添加该电脑的
+MaixCDK include 路径。

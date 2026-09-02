@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "videos": {
+    "0.mp4": [
+      {
+        "start_s": 0.0,
+        "end_s": 1.0,
+        "target_present": false,
+        "venue": "replace_with_venue",
+        "color": "red",
+        "tags": ["example_only", "led_screen_hard_negative"]
+      },
+      {
+        "start_s": 1.0,
+        "end_s": 5.0,
+        "target_present": true,
+        "venue": "replace_with_venue",
+        "distance_m": 25,
+        "color": "red",
+        "roll_deg": 0,
+        "blur": "low"
+      }
+    ]
+  }
+}

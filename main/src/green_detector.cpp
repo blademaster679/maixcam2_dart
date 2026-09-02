@@ -1,6 +1,7 @@
 #include "dart/green_detector.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -90,9 +91,121 @@ struct CoreBlob {
     float roundness = 0.0F;
 };
 
+template <typename Value>
+struct IntegralPlane {
+    int width = 0;
+    int height = 0;
+    std::vector<Value> values;
+
+    explicit IntegralPlane(int image_width = 0, int image_height = 0)
+        : width(image_width), height(image_height),
+          values(static_cast<std::size_t>(image_width + 1) *
+                 (image_height + 1), Value{})
+    {
+    }
+
+    Value &at(int x, int y)
+    {
+        return values[static_cast<std::size_t>(y) * (width + 1) + x];
+    }
+
+    Value at(int x, int y) const
+    {
+        return values[static_cast<std::size_t>(y) * (width + 1) + x];
+    }
+
+    uint64_t sum(const Rect &rect) const
+    {
+        const int64_t result =
+            static_cast<int64_t>(at(rect.x1, rect.y1)) +
+            static_cast<int64_t>(at(rect.x0, rect.y0)) -
+            static_cast<int64_t>(at(rect.x0, rect.y1)) -
+            static_cast<int64_t>(at(rect.x1, rect.y0));
+        return static_cast<uint64_t>(std::max<int64_t>(0, result));
+    }
+};
+
+struct ScalePeak {
+    int x = 0;
+    int y = 0;
+    int diameter = 0;
+    float response = 0.0F;
+    float green_mean = 0.0F;
+    float brightness_mean = 0.0F;
+    float brightness_contrast = 0.0F;
+    float contrast_z = 0.0F;
+};
+
 float clamp01(float value)
 {
     return std::max(0.0F, std::min(1.0F, value));
+}
+
+float normalized_green_response(float red, float green, float blue)
+{
+    static const std::array<float, 256> signal_lut = [] {
+        std::array<float, 256> values{};
+        for (std::size_t index = 0; index < values.size(); ++index) {
+            values[index] = std::sqrt(static_cast<float>(index) / 255.0F);
+        }
+        return values;
+    }();
+    const float excess = std::max(0.0F, 2.0F * green - red - blue);
+    const float ratio = excess / (red + green + blue + 1.0F);
+    const float absolute = excess / 510.0F;
+    const int peak = std::max(0, std::min(
+        255, static_cast<int>(std::max(red, std::max(green, blue)))));
+    const float signal = signal_lut[static_cast<std::size_t>(peak)];
+    // A ratio alone assigns near-unit "greenness" to dark codec noise. The
+    // absolute term and signal-weighted ratio preserve dim real lamps while
+    // suppressing chromatic noise whose RGB energy is close to zero.
+    return clamp01(0.65F * absolute + 0.35F * ratio * signal);
+}
+
+uint8_t fast_normalized_green_response(uint8_t red,
+                                       uint8_t green,
+                                       uint8_t blue)
+{
+    // Keep the floating-point definition's two terms, but evaluate them with
+    // fixed-point arithmetic and tiny L1-resident tables. The previous
+    // 6-bit/channel LUT occupied 256 KiB and caused effectively random L2
+    // reads for every pixel on Cortex-A53.
+    static const std::array<uint32_t, 766> reciprocal_lut = [] {
+        std::array<uint32_t, 766> values{};
+        for (std::size_t sum = 0; sum < values.size(); ++sum) {
+            values[sum] = static_cast<uint32_t>(
+                ((255ULL << 16U) + (sum + 1U) / 2U) / (sum + 1U));
+        }
+        return values;
+    }();
+    static const std::array<uint8_t, 256> signal_lut = [] {
+        std::array<uint8_t, 256> values{};
+        for (std::size_t peak = 0; peak < values.size(); ++peak) {
+            values[peak] = static_cast<uint8_t>(std::lround(
+                255.0F * std::sqrt(static_cast<float>(peak) / 255.0F)));
+        }
+        return values;
+    }();
+
+    const int excess = 2 * static_cast<int>(green) - red - blue;
+    if (excess <= 0) {
+        return 0U;
+    }
+    const int sum = static_cast<int>(red) + green + blue;
+    const int peak = std::max(static_cast<int>(red),
+                              std::max(static_cast<int>(green),
+                                       static_cast<int>(blue)));
+    const uint32_t absolute = static_cast<uint32_t>(
+        std::min(255, (excess + 1) / 2));
+    const uint32_t ratio = std::min<uint32_t>(
+        255U, (static_cast<uint32_t>(excess) * reciprocal_lut[sum] +
+               (1U << 15U)) >> 16U);
+    const uint32_t ratio_signal =
+        (ratio * signal_lut[static_cast<std::size_t>(peak)] + 127U) / 255U;
+    return static_cast<uint8_t>(
+        std::min<uint32_t>(255U,
+                           (65U * absolute + 35U * ratio_signal + 50U) /
+                               100U));
 }
 
 Rect clip_rect(int x, int y, int width, int height, int image_width, int image_height)
@@ -103,6 +216,633 @@ Rect clip_rect(int x, int y, int width, int height, int image_width, int image_h
     result.x1 = std::max(result.x0, std::min(image_width, x + width));
     result.y1 = std::max(result.y0, std::min(image_height, y + height));
     return result;
+}
+
+struct ResponseComponent {
+    static constexpr std::size_t kMaxLocalPeaks = 4;
+    float center_x = 0.0F;
+    float center_y = 0.0F;
+    float priority = 0.0F;
+    int pixels = 0;
+    std::array<int, kMaxLocalPeaks> local_peak_x{};
+    std::array<int, kMaxLocalPeaks> local_peak_y{};
+    std::array<uint8_t, kMaxLocalPeaks> local_peak_response{};
+    std::size_t local_peak_count = 0;
+};
+
+ScalePeak evaluate_component_scale(const uint8_t *rgb,
+                                   int image_width,
+                                   int image_height,
+                                   int center_x,
+                                   int center_y,
+                                   int diameter,
+                                   const DetectorConfig &config,
+                                   bool tracking_confirmed)
+{
+    ScalePeak rejected;
+    const int radius = std::max(1, diameter / 2);
+    const int outer_radius = std::max(radius + 2, diameter);
+    const Rect inner = clip_rect(center_x - radius, center_y - radius,
+                                 2 * radius + 1, 2 * radius + 1,
+                                 image_width, image_height);
+    const Rect outer = clip_rect(center_x - outer_radius,
+                                 center_y - outer_radius,
+                                 2 * outer_radius + 1,
+                                 2 * outer_radius + 1,
+                                 image_width, image_height);
+    const int inner_area = (inner.x1 - inner.x0) * (inner.y1 - inner.y0);
+    const int outer_area = (outer.x1 - outer.x0) * (outer.y1 - outer.y0);
+    const int ring_area = outer_area - inner_area;
+    if (inner_area <= 0 || ring_area <= 0) {
+        return rejected;
+    }
+
+    uint64_t inner_green_sum = 0;
+    uint64_t inner_brightness_sum = 0;
+    uint64_t ring_green_sum = 0;
+    uint64_t ring_brightness_sum = 0;
+    uint64_t ring_brightness_squared_sum = 0;
+    for (int y = outer.y0; y < outer.y1; ++y) {
+        for (int x = outer.x0; x < outer.x1; ++x) {
+            const std::size_t offset =
+                (static_cast<std::size_t>(y) * image_width + x) * 3U;
+            const uint8_t red = rgb[offset];
+            const uint8_t green = rgb[offset + 1];
+            const uint8_t blue = rgb[offset + 2];
+            const uint32_t green_response =
+                fast_normalized_green_response(red, green, blue);
+            const uint32_t brightness =
+                (77U * red + 150U * green + 29U * blue) >> 8U;
+            if (x >= inner.x0 && x < inner.x1 &&
+                y >= inner.y0 && y < inner.y1) {
+                inner_green_sum += green_response;
+                inner_brightness_sum += brightness;
+            } else {
+                ring_green_sum += green_response;
+                ring_brightness_sum += brightness;
+                ring_brightness_squared_sum +=
+                    static_cast<uint64_t>(brightness) * brightness;
+            }
+        }
+    }
+
+    const float inner_normalizer =
+        1.0F / (255.0F * static_cast<float>(inner_area));
+    const float ring_normalizer =
+        1.0F / (255.0F * static_cast<float>(ring_area));
+    const float inner_green =
+        static_cast<float>(inner_green_sum) * inner_normalizer;
+    const float inner_brightness =
+        static_cast<float>(inner_brightness_sum) * inner_normalizer;
+    const float ring_green =
+        static_cast<float>(ring_green_sum) * ring_normalizer;
+    const float ring_brightness =
+        static_cast<float>(ring_brightness_sum) * ring_normalizer;
+    const float brightness_contrast = inner_brightness - ring_brightness;
+    const float response = inner_green - ring_green +
+        config.normalized_brightness_weight *
+            std::max(-0.10F, brightness_contrast);
+    if (response < config.min_normalized_green_response ||
+        inner_green < config.min_normalized_green_response ||
+        inner_brightness < config.min_normalized_inner_brightness) {
+        return rejected;
+    }
+
+    const float ring_brightness_squared =
+        static_cast<float>(ring_brightness_squared_sum) /
+        (255.0F * 255.0F * static_cast<float>(ring_area));
+    const float ring_variance = std::max(
+        0.0F, ring_brightness_squared - ring_brightness * ring_brightness);
+    const float contrast_z = brightness_contrast /
+        std::sqrt(ring_variance + 0.0025F);
+    const float minimum_contrast_z = tracking_confirmed
+        ? config.min_tracking_normalized_contrast_z
+        : config.min_normalized_contrast_z;
+    if (contrast_z < minimum_contrast_z) {
+        return rejected;
+    }
+
+    return ScalePeak{center_x, center_y, diameter, response, inner_green,
+                     inner_brightness, brightness_contrast, contrast_z};
+}
+
+std::vector<ScalePeak> collect_sparse_multiscale_peaks(
+    const uint8_t *rgb,
+    int image_width,
+    int image_height,
+    const Rect &search_region,
+    const DetectorConfig &config,
+    bool tracking_confirmed)
+{
+    const int search_width = search_region.x1 - search_region.x0;
+    const int search_height = search_region.y1 - search_region.y0;
+    std::vector<ScalePeak> peaks;
+    if (search_width <= 0 || search_height <= 0) {
+        return peaks;
+    }
+
+    {
+        // Divide the capture cone into tiny tiles and retain the strongest
+        // qualifying green pixel in each tile. Unlike connected components,
+        // this remains O(pixels) even when a cyan wall or LED screen forms one
+        // huge component, and it naturally preserves several spatially
+        // distinct hypotheses on a motion-blurred lamp.
+        constexpr int kTileSize = 4;
+        // The 256/128 budgets are required by the long-range clips: reducing
+        // either budget loses valid 5-8 px lamps in LED-heavy frames. Use
+        // nth_element below to keep the budget without fully sorting thousands
+        // of provisional peaks.
+        constexpr std::size_t kCoarseHypotheses = 256;
+        constexpr std::size_t kExactHypotheses = 128;
+        struct TileSeed {
+            uint8_t response = 0;
+            int x = 0;
+            int y = 0;
+        };
+
+        const uint8_t response_threshold = static_cast<uint8_t>(std::max(
+            1, static_cast<int>(std::ceil(
+                   255.0F * config.min_normalized_green_response))));
+        const uint8_t brightness_threshold = static_cast<uint8_t>(std::max(
+            1, static_cast<int>(std::ceil(
+                   255.0F * config.min_normalized_inner_brightness))));
+        const int tile_columns =
+            (search_width + kTileSize - 1) / kTileSize;
+        const int tile_rows =
+            (search_height + kTileSize - 1) / kTileSize;
+        std::vector<TileSeed> tile_seeds(
+            static_cast<std::size_t>(tile_columns) * tile_rows);
+        IntegralPlane<uint32_t> response_integral(search_width, search_height);
+        for (int local_y = 0; local_y < search_height; ++local_y) {
+            uint32_t response_row_sum = 0;
+            const int image_y = search_region.y0 + local_y;
+            for (int local_x = 0; local_x < search_width; ++local_x) {
+                const int image_x = search_region.x0 + local_x;
+                const std::size_t image_offset =
+                    (static_cast<std::size_t>(image_y) * image_width +
+                     image_x) * 3U;
+                const uint8_t red = rgb[image_offset];
+                const uint8_t green = rgb[image_offset + 1];
+                const uint8_t blue = rgb[image_offset + 2];
+                const uint8_t response =
+                    fast_normalized_green_response(red, green, blue);
+                response_row_sum += response;
+                response_integral.at(local_x + 1, local_y + 1) =
+                    response_integral.at(local_x + 1, local_y) +
+                    response_row_sum;
+                if (response < response_threshold) {
+                    continue;
+                }
+                const uint8_t brightness = static_cast<uint8_t>(
+                    (77U * red + 150U * green + 29U * blue) >> 8U);
+                if (brightness < brightness_threshold) {
+                    continue;
+                }
+                TileSeed &seed = tile_seeds[
+                    static_cast<std::size_t>(local_y / kTileSize) *
+                        tile_columns +
+                    local_x / kTileSize];
+                if (response > seed.response) {
+                    seed.response = response;
+                    seed.x = image_x;
+                    seed.y = image_y;
+                }
+            }
+        }
+
+        const auto rank_peak = [&](int image_center_x,
+                                   int image_center_y,
+                                   int diameter) {
+            ScalePeak result;
+            const int local_center_x = image_center_x - search_region.x0;
+            const int local_center_y = image_center_y - search_region.y0;
+            const int radius = std::max(1, diameter / 2);
+            const int outer_radius = std::max(radius + 2, diameter);
+            const Rect inner = clip_rect(
+                local_center_x - radius, local_center_y - radius,
+                2 * radius + 1, 2 * radius + 1,
+                search_width, search_height);
+            const Rect outer = clip_rect(
+                local_center_x - outer_radius,
+                local_center_y - outer_radius,
+                2 * outer_radius + 1, 2 * outer_radius + 1,
+                search_width, search_height);
+            const int inner_area =
+                (inner.x1 - inner.x0) * (inner.y1 - inner.y0);
+            const int outer_area =
+                (outer.x1 - outer.x0) * (outer.y1 - outer.y0);
+            const int ring_area = outer_area - inner_area;
+            if (inner_area <= 0 || ring_area <= 0) {
+                return result;
+            }
+            const uint64_t inner_sum = response_integral.sum(inner);
+            const uint64_t outer_sum = response_integral.sum(outer);
+            const float inner_green = static_cast<float>(inner_sum) /
+                (255.0F * inner_area);
+            if (inner_green <
+                0.5F * config.min_normalized_green_response) {
+                return result;
+            }
+            const float ring_green =
+                static_cast<float>(outer_sum - inner_sum) /
+                (255.0F * ring_area);
+            result.x = image_center_x;
+            result.y = image_center_y;
+            result.diameter = diameter;
+            result.response = inner_green - ring_green +
+                0.05F * inner_green;
+            result.green_mean = inner_green;
+            return result;
+        };
+
+        std::vector<ScalePeak> coarse_peaks;
+        coarse_peaks.reserve(2U * tile_seeds.size());
+        for (const auto &seed : tile_seeds) {
+            if (seed.response == 0U) {
+                continue;
+            }
+            ScalePeak best;
+            ScalePeak second_best;
+            for (const int diameter : config.multiscale_diameters_px) {
+                const ScalePeak candidate =
+                    rank_peak(seed.x, seed.y, diameter);
+                if (candidate.diameter == 0) {
+                    continue;
+                }
+                if (best.diameter == 0 ||
+                    candidate.response > best.response) {
+                    second_best = best;
+                    best = candidate;
+                } else if (second_best.diameter == 0 ||
+                           candidate.response > second_best.response) {
+                    second_best = candidate;
+                }
+            }
+            if (best.diameter > 0) {
+                coarse_peaks.push_back(best);
+            }
+            if (second_best.diameter > 0) {
+                coarse_peaks.push_back(second_best);
+            }
+        }
+        const auto stronger_peak =
+            [](const ScalePeak &left, const ScalePeak &right) {
+                return left.response > right.response;
+            };
+        if (coarse_peaks.size() > kCoarseHypotheses) {
+            std::nth_element(coarse_peaks.begin(),
+                             coarse_peaks.begin() + kCoarseHypotheses,
+                             coarse_peaks.end(), stronger_peak);
+            coarse_peaks.resize(kCoarseHypotheses);
+        }
+
+        std::vector<ScalePeak> refined_peaks = coarse_peaks;
+        refined_peaks.reserve(
+            coarse_peaks.size() * (1U + 8U * 3U));
+        for (const auto &coarse : coarse_peaks) {
+            for (int offset_y = -1; offset_y <= 1; ++offset_y) {
+                for (int offset_x = -1; offset_x <= 1; ++offset_x) {
+                    if (offset_x == 0 && offset_y == 0) {
+                        continue;
+                    }
+                    for (std::size_t scale = 0;
+                         scale < std::min<std::size_t>(
+                             3U, config.multiscale_diameters_px.size());
+                         ++scale) {
+                        const ScalePeak candidate = rank_peak(
+                            coarse.x + offset_x, coarse.y + offset_y,
+                            config.multiscale_diameters_px[scale]);
+                        if (candidate.diameter > 0) {
+                            refined_peaks.push_back(candidate);
+                        }
+                    }
+                }
+            }
+        }
+        if (refined_peaks.size() > kExactHypotheses) {
+            std::nth_element(refined_peaks.begin(),
+                             refined_peaks.begin() + kExactHypotheses,
+                             refined_peaks.end(), stronger_peak);
+            refined_peaks.resize(kExactHypotheses);
+        }
+        peaks.reserve(refined_peaks.size());
+        for (const auto &ranked : refined_peaks) {
+            const ScalePeak exact = evaluate_component_scale(
+                rgb, image_width, image_height, ranked.x, ranked.y,
+                ranked.diameter, config, tracking_confirmed);
+            if (exact.diameter > 0) {
+                peaks.push_back(exact);
+            }
+        }
+        return peaks;
+    }
+
+#if 0  // Disabled connected-component A/B reference; production uses tiles.
+
+    // Only one byte per searched pixel is retained. A pixel becomes a seed
+    // when it could contribute to a passing local mean. A later ring test is
+    // still authoritative, so this first pass deliberately favors recall.
+    const uint8_t response_threshold = static_cast<uint8_t>(std::max(
+        1, static_cast<int>(std::ceil(
+               255.0F * config.min_normalized_green_response))));
+    const uint8_t brightness_threshold = static_cast<uint8_t>(std::max(
+        1, static_cast<int>(std::ceil(
+               255.0F * config.min_normalized_inner_brightness))));
+    std::vector<uint8_t> response_map(
+        static_cast<std::size_t>(search_width) * search_height);
+    IntegralPlane<uint32_t> response_integral(search_width, search_height);
+    for (int local_y = 0; local_y < search_height; ++local_y) {
+        uint32_t response_row_sum = 0;
+        const int image_y = search_region.y0 + local_y;
+        for (int local_x = 0; local_x < search_width; ++local_x) {
+            const int image_x = search_region.x0 + local_x;
+            const std::size_t image_offset =
+                (static_cast<std::size_t>(image_y) * image_width + image_x) *
+                3U;
+            const uint8_t red = rgb[image_offset];
+            const uint8_t green = rgb[image_offset + 1];
+            const uint8_t blue = rgb[image_offset + 2];
+            const uint8_t response =
+                fast_normalized_green_response(red, green, blue);
+            const uint8_t brightness = static_cast<uint8_t>(
+                (77U * red + 150U * green + 29U * blue) >> 8U);
+            response_row_sum += response;
+            response_integral.at(local_x + 1, local_y + 1) =
+                response_integral.at(local_x + 1, local_y) +
+                response_row_sum;
+            response_map[static_cast<std::size_t>(local_y) * search_width +
+                         local_x] =
+                response >= response_threshold &&
+                        brightness >= brightness_threshold
+                    ? response
+                    : 0U;
+        }
+    }
+
+    int largest_diameter = 1;
+    for (const int diameter : config.multiscale_diameters_px) {
+        largest_diameter = std::max(largest_diameter, diameter);
+    }
+    const int max_component_span = std::max(32, 6 * largest_diameter);
+    std::vector<ResponseComponent> components;
+    components.reserve(128);
+    std::vector<uint32_t> stack;
+    stack.reserve(256);
+    for (int seed_y = 0; seed_y < search_height; ++seed_y) {
+        for (int seed_x = 0; seed_x < search_width; ++seed_x) {
+            const std::size_t seed_index =
+                static_cast<std::size_t>(seed_y) * search_width + seed_x;
+            const uint8_t seed_response = response_map[seed_index];
+            if (seed_response == 0U) {
+                continue;
+            }
+
+            stack.clear();
+            response_map[seed_index] = 0U;
+            stack.push_back((static_cast<uint32_t>(seed_index) << 8U) |
+                            seed_response);
+            uint64_t response_sum = 0;
+            uint64_t weighted_x_sum = 0;
+            uint64_t weighted_y_sum = 0;
+            int pixels = 0;
+            int min_x = seed_x;
+            int max_x = seed_x;
+            int min_y = seed_y;
+            int max_y = seed_y;
+            std::array<int, ResponseComponent::kMaxLocalPeaks> local_peak_x{};
+            std::array<int, ResponseComponent::kMaxLocalPeaks> local_peak_y{};
+            std::array<uint8_t, ResponseComponent::kMaxLocalPeaks>
+                local_peak_response{};
+            std::size_t local_peak_count = 0;
+            while (!stack.empty()) {
+                const uint32_t packed = stack.back();
+                stack.pop_back();
+                const uint8_t response =
+                    static_cast<uint8_t>(packed & 0xffU);
+                const uint32_t index = packed >> 8U;
+                const int local_y = static_cast<int>(index / search_width);
+                const int local_x = static_cast<int>(index) -
+                    local_y * search_width;
+                response_sum += response;
+                weighted_x_sum += static_cast<uint64_t>(response) * local_x;
+                weighted_y_sum += static_cast<uint64_t>(response) * local_y;
+                ++pixels;
+                min_x = std::min(min_x, local_x);
+                max_x = std::max(max_x, local_x);
+                min_y = std::min(min_y, local_y);
+                max_y = std::max(max_y, local_y);
+                std::size_t nearby_peak = local_peak_count;
+                for (std::size_t peak_index = 0;
+                     peak_index < local_peak_count; ++peak_index) {
+                    const int dx = local_x - local_peak_x[peak_index];
+                    const int dy = local_y - local_peak_y[peak_index];
+                    if (dx * dx + dy * dy <= 9) {
+                        nearby_peak = peak_index;
+                        break;
+                    }
+                }
+                if (nearby_peak < local_peak_count) {
+                    if (response > local_peak_response[nearby_peak]) {
+                        local_peak_x[nearby_peak] = local_x;
+                        local_peak_y[nearby_peak] = local_y;
+                        local_peak_response[nearby_peak] = response;
+                    }
+                } else if (local_peak_count <
+                           ResponseComponent::kMaxLocalPeaks) {
+                    local_peak_x[local_peak_count] = local_x;
+                    local_peak_y[local_peak_count] = local_y;
+                    local_peak_response[local_peak_count] = response;
+                    ++local_peak_count;
+                } else {
+                    const auto weakest = std::min_element(
+                        local_peak_response.begin(),
+                        local_peak_response.end());
+                    if (response > *weakest) {
+                        const std::size_t peak_index =
+                            static_cast<std::size_t>(
+                                weakest - local_peak_response.begin());
+                        local_peak_x[peak_index] = local_x;
+                        local_peak_y[peak_index] = local_y;
+                        local_peak_response[peak_index] = response;
+                    }
+                }
+
+                for (int neighbor_y = std::max(0, local_y - 1);
+                     neighbor_y <= std::min(search_height - 1, local_y + 1);
+                     ++neighbor_y) {
+                    for (int neighbor_x = std::max(0, local_x - 1);
+                         neighbor_x <= std::min(search_width - 1,
+                                                local_x + 1);
+                         ++neighbor_x) {
+                        const std::size_t neighbor_index =
+                            static_cast<std::size_t>(neighbor_y) *
+                                search_width +
+                            neighbor_x;
+                        const uint8_t neighbor_response =
+                            response_map[neighbor_index];
+                        if (neighbor_response == 0U) {
+                            continue;
+                        }
+                        response_map[neighbor_index] = 0U;
+                        stack.push_back(
+                            (static_cast<uint32_t>(neighbor_index) << 8U) |
+                            neighbor_response);
+                    }
+                }
+            }
+
+            if (pixels <= 0 || max_x - min_x + 1 > max_component_span ||
+                max_y - min_y + 1 > max_component_span) {
+                continue;
+            }
+            const float inverse_response = 1.0F /
+                static_cast<float>(std::max<uint64_t>(1, response_sum));
+            const float center_x = search_region.x0 +
+                static_cast<float>(weighted_x_sum) * inverse_response;
+            const float center_y = search_region.y0 +
+                static_cast<float>(weighted_y_sum) * inverse_response;
+            const float mean_response =
+                static_cast<float>(response_sum) / (255.0F * pixels);
+            const float priority = mean_response *
+                std::sqrt(static_cast<float>(std::min(pixels, 64)));
+            ResponseComponent component;
+            component.center_x = center_x;
+            component.center_y = center_y;
+            component.priority = priority;
+            component.pixels = pixels;
+            component.local_peak_count = local_peak_count;
+            component.local_peak_response = local_peak_response;
+            for (std::size_t peak_index = 0;
+                 peak_index < local_peak_count; ++peak_index) {
+                component.local_peak_x[peak_index] =
+                    search_region.x0 + local_peak_x[peak_index];
+                component.local_peak_y[peak_index] =
+                    search_region.y0 + local_peak_y[peak_index];
+            }
+            components.push_back(component);
+        }
+    }
+
+    std::sort(components.begin(), components.end(),
+              [](const ResponseComponent &left,
+                 const ResponseComponent &right) {
+                  return left.priority > right.priority;
+              });
+    if (components.size() > 64U) {
+        components.resize(64U);
+    }
+    std::vector<ScalePeak> preliminary_peaks;
+    preliminary_peaks.reserve(64U * components.size());
+    const auto add_preliminary_peak =
+        [&](int image_center_x, int image_center_y, int diameter) {
+            const int local_center_x = image_center_x - search_region.x0;
+            const int local_center_y = image_center_y - search_region.y0;
+            const int radius = std::max(1, diameter / 2);
+            const int outer_radius = std::max(radius + 2, diameter);
+            const Rect inner = clip_rect(
+                local_center_x - radius, local_center_y - radius,
+                2 * radius + 1, 2 * radius + 1,
+                search_width, search_height);
+            const Rect outer = clip_rect(
+                local_center_x - outer_radius,
+                local_center_y - outer_radius,
+                2 * outer_radius + 1, 2 * outer_radius + 1,
+                search_width, search_height);
+            const int inner_area =
+                (inner.x1 - inner.x0) * (inner.y1 - inner.y0);
+            const int outer_area =
+                (outer.x1 - outer.x0) * (outer.y1 - outer.y0);
+            const int ring_area = outer_area - inner_area;
+            if (inner_area <= 0 || ring_area <= 0) {
+                return;
+            }
+            const uint64_t inner_sum = response_integral.sum(inner);
+            const uint64_t outer_sum = response_integral.sum(outer);
+            const float inner_green = static_cast<float>(inner_sum) /
+                (255.0F * inner_area);
+            if (inner_green <
+                0.5F * config.min_normalized_green_response) {
+                return;
+            }
+            const float ring_green =
+                static_cast<float>(outer_sum - inner_sum) /
+                (255.0F * ring_area);
+            // This is only a cheap ranking score. The exact RGB brightness,
+            // variance and configured gates are evaluated after global
+            // pruning below.
+            const float rank_score =
+                inner_green - ring_green + 0.05F * inner_green;
+            preliminary_peaks.push_back(
+                ScalePeak{image_center_x, image_center_y, diameter,
+                          rank_score, inner_green, 0.0F, 0.0F, 0.0F});
+        };
+
+    for (const auto &component : components) {
+        std::vector<std::array<int, 2>> centers;
+        centers.reserve(1U + component.local_peak_count);
+        centers.push_back({
+            static_cast<int>(std::lround(component.center_x)),
+            static_cast<int>(std::lround(component.center_y)),
+        });
+        std::size_t strongest_peak_index = 0;
+        for (std::size_t peak_index = 0;
+             peak_index < component.local_peak_count; ++peak_index) {
+            centers.push_back({component.local_peak_x[peak_index],
+                               component.local_peak_y[peak_index]});
+            if (component.local_peak_response[peak_index] >
+                component.local_peak_response[strongest_peak_index]) {
+                strongest_peak_index = peak_index;
+            }
+        }
+        for (const auto &center : centers) {
+            for (const int diameter : config.multiscale_diameters_px) {
+                add_preliminary_peak(center[0], center[1], diameter);
+            }
+        }
+        // A distant lamp may be embedded in a much larger weak-green
+        // component (for example a cyan wall). Its strongest pixel remains a
+        // good seed, but a one-pixel shift changes a 3x3 ring response
+        // materially. Refine only the three small scales in a 3x3
+        // neighborhood; this recovers the dense scan's centering precision at
+        // a bounded cost of 24 tiny windows per component.
+        for (int offset_y = -1; offset_y <= 1; ++offset_y) {
+            for (int offset_x = -1; offset_x <= 1; ++offset_x) {
+                if (offset_x == 0 && offset_y == 0) {
+                    continue;
+                }
+                for (std::size_t scale = 0;
+                     scale < std::min<std::size_t>(
+                         3U, config.multiscale_diameters_px.size());
+                     ++scale) {
+                    add_preliminary_peak(
+                        component.local_peak_x[strongest_peak_index] +
+                            offset_x,
+                        component.local_peak_y[strongest_peak_index] +
+                            offset_y,
+                        config.multiscale_diameters_px[scale]);
+                }
+            }
+        }
+    }
+
+    std::sort(preliminary_peaks.begin(), preliminary_peaks.end(),
+              [](const ScalePeak &left, const ScalePeak &right) {
+                  return left.response > right.response;
+              });
+    if (preliminary_peaks.size() > 128U) {
+        preliminary_peaks.resize(128U);
+    }
+    peaks.reserve(preliminary_peaks.size());
+    for (const auto &preliminary : preliminary_peaks) {
+        const ScalePeak exact = evaluate_component_scale(
+            rgb, image_width, image_height, preliminary.x, preliminary.y,
+            preliminary.diameter, config, tracking_confirmed);
+        if (exact.diameter > 0) {
+            peaks.push_back(exact);
+        }
+    }
+    return peaks;
+#endif
 }
 
 RgbStatistics sample_rect(const uint8_t *rgb,
@@ -144,6 +884,29 @@ int intersection_area(int ax, int ay, int aw, int ah,
     return std::max(0, right - left) * std::max(0, bottom - top);
 }
 
+bool point_inside_capture_cone(float x,
+                               float y,
+                               int image_width,
+                               int image_height,
+                               const DetectorConfig &config)
+{
+    if (!config.enable_capture_cone) {
+        return true;
+    }
+    const bool calibration_matches_frame =
+        config.camera_model.principal_x >= 0.0F &&
+        config.camera_model.principal_x < image_width &&
+        config.camera_model.principal_y >= 0.0F &&
+        config.camera_model.principal_y < image_height;
+    if (!calibration_matches_frame) {
+        return true;
+    }
+    const auto angles = detail::pixel_to_angles(x, y, config.camera_model);
+    constexpr float kPi = 3.14159265358979323846F;
+    const float radius_rad = config.capture_cone_deg * kPi / 180.0F;
+    return std::hypot(angles[0], angles[1]) <= radius_rad;
+}
+
 }  // namespace
 
 struct GreenLightDetector::Candidate {
@@ -151,8 +914,18 @@ struct GreenLightDetector::Candidate {
     GreenLightCandidateDebug debug;
 };
 
-GreenLightDetector::GreenLightDetector(const DetectorConfig &config)
-    : config_(config), tracker_(config)
+GreenLightDetector::GreenLightDetector(
+    const DetectorConfig &config,
+    const ArmorConfig &armor_config,
+    const TargetGeometryConfig &target_geometry,
+    const NpuConfig &npu_config,
+    std::shared_ptr<TargetPoseValidator> pose_validator)
+    : config_(config),
+      armor_config_(armor_config),
+      target_geometry_(target_geometry),
+      npu_config_(npu_config),
+      tracker_(config),
+      pose_validator_(std::move(pose_validator))
 {
 }
 
@@ -160,6 +933,23 @@ void GreenLightDetector::reset()
 {
     tracker_.reset();
     last_candidates_.clear();
+    candidate_hypotheses_.fill(CandidateHypothesis{});
+    last_model_timestamp_us_ = 0;
+    last_model_positive_timestamp_us_ = 0;
+    last_model_inference_ms_ = 0.0F;
+    last_pose_validation_ = PoseValidation{};
+    last_model_roi_ = CandidateRoi{};
+    last_output_timestamp_us_ = 0;
+    last_output_angles_.fill(0.0F);
+    armor_pose_hits_ = 0;
+    armor_blend_start_us_ = 0;
+    last_armor_timestamp_us_ = 0;
+    last_armor_detection_ = ArmorDetection{};
+    search_model_cursor_ = 0;
+    frame_counter_ = 0;
+    classical_detection_count_ = 0;
+    last_classical_detection_ran_ = false;
+    last_classical_detection_ms_ = 0.0F;
 }
 
 const std::vector<GreenLightCandidateDebug> &GreenLightDetector::last_candidates() const
@@ -177,18 +967,22 @@ GreenLightDetector::collect_candidates(maix::image::Image &frame)
         throw std::runtime_error("RGB888 frame has an invalid data buffer");
     }
 
-    const std::vector<std::vector<int>> halo_thresholds{
-        config_.halo_lab.as_vector(),
-    };
-    const std::vector<std::vector<int>> core_thresholds{
-        config_.core_lab.as_vector(),
-    };
-    auto halo_blobs = frame.find_blobs(halo_thresholds, false, {}, 1, 1, 1, 1,
-                                       config_.merge_blobs,
-                                       config_.merge_margin_px);
-    auto core_blobs = frame.find_blobs(core_thresholds, false, {}, 1, 1, 1, 1,
-                                       config_.merge_blobs,
-                                       config_.merge_margin_px);
+    std::vector<maix::image::Blob> halo_blobs;
+    std::vector<maix::image::Blob> core_blobs;
+    if (config_.enable_legacy_lab_candidates) {
+        const std::vector<std::vector<int>> halo_thresholds{
+            config_.halo_lab.as_vector(),
+        };
+        const std::vector<std::vector<int>> core_thresholds{
+            config_.core_lab.as_vector(),
+        };
+        halo_blobs = frame.find_blobs(halo_thresholds, false, {}, 1, 1, 1, 1,
+                                      config_.merge_blobs,
+                                      config_.merge_margin_px);
+        core_blobs = frame.find_blobs(core_thresholds, false, {}, 1, 1, 1, 1,
+                                      config_.merge_blobs,
+                                      config_.merge_margin_px);
+    }
 
     std::vector<CoreBlob> cores;
     cores.reserve(core_blobs.size());
@@ -245,7 +1039,7 @@ GreenLightDetector::collect_candidates(maix::image::Image &frame)
                                          ? inside.brightness() - ring.brightness()
                                          : 0.0F;
         if (green_dominance < config_.min_green_dominance ||
-            local_contrast < config_.min_local_contrast) {
+            local_contrast < config_.min_tracking_local_contrast) {
             continue;
         }
 
@@ -350,8 +1144,21 @@ GreenLightDetector::collect_candidates(maix::image::Image &frame)
 
         const float temporal_score = tracker_.association_score(observation);
         observation.association_score = temporal_score;
-        if (tracker_.tracking_confirmed() &&
+        if (tracker_.tracking_confirmed() && tracker_.missed_frames() == 0 &&
             !tracker_.passes_association_gate(observation)) {
+            continue;
+        }
+        // Bright structures immediately behind a green lamp can make the
+        // lamp's bounding box darker than its surrounding ring even though
+        // its color and motion remain unambiguous. Keep the strict contrast
+        // gate while acquiring. Once tracking is confirmed, relax it only for
+        // a candidate that strongly agrees with the predicted position and
+        // size; local contrast remains a soft score below.
+        const bool contrast_relaxation_allowed =
+            tracker_.tracking_confirmed() &&
+            temporal_score >= config_.contrast_relax_min_association;
+        if (local_contrast < config_.min_local_contrast &&
+            !contrast_relaxation_allowed) {
             continue;
         }
 
@@ -385,10 +1192,339 @@ GreenLightDetector::collect_candidates(maix::image::Image &frame)
         candidate.debug.center_prior_score = center_prior_score;
         candidate.debug.initial_size_score = initial_size_score;
         candidate.debug.score = observation.score;
+        candidate.debug.inside_capture_cone = point_inside_capture_cone(
+            center_x, center_y, image_width, image_height, config_);
         candidates.push_back(candidate);
     }
 
+    if (config_.enable_normalized_multiscale) {
+        Rect search_region{0, 0, image_width, image_height};
+        if (config_.multiscale_capture_cone_only &&
+            config_.enable_capture_cone &&
+            config_.camera_model.principal_x >= 0.0F &&
+            config_.camera_model.principal_x < image_width &&
+            config_.camera_model.principal_y >= 0.0F &&
+            config_.camera_model.principal_y < image_height) {
+            constexpr float kPi = 3.14159265358979323846F;
+            const float cone_tangent = std::tan(
+                config_.capture_cone_deg * kPi / 180.0F);
+            const int radius_x = std::max(
+                1, static_cast<int>(std::ceil(
+                       cone_tangent * config_.camera_model.fx)));
+            const int radius_y = std::max(
+                1, static_cast<int>(std::ceil(
+                       cone_tangent * config_.camera_model.fy)));
+            search_region = clip_rect(
+                static_cast<int>(std::floor(
+                    config_.camera_model.principal_x)) - radius_x,
+                static_cast<int>(std::floor(
+                    config_.camera_model.principal_y)) - radius_y,
+                2 * radius_x + 1, 2 * radius_y + 1,
+                image_width, image_height);
+        }
+
+        const bool refresh_full_cone =
+            classical_detection_count_ == 0 ||
+            classical_detection_count_ % static_cast<uint64_t>(
+                config_.multiscale_full_refresh_interval) == 0;
+        if (tracker_.tracking_confirmed() && tracker_.missed_frames() == 0 &&
+            config_.multiscale_tracking_roi_radius_px > 0.0F &&
+            !refresh_full_cone) {
+            const int radius = static_cast<int>(std::ceil(
+                std::max(config_.multiscale_tracking_roi_radius_px,
+                         config_.gate_max_px)));
+            const Rect tracking_region = clip_rect(
+                static_cast<int>(std::floor(tracker_.predicted_x())) - radius,
+                static_cast<int>(std::floor(tracker_.predicted_y())) - radius,
+                2 * radius + 1, 2 * radius + 1,
+                image_width, image_height);
+            search_region.x0 = std::max(search_region.x0, tracking_region.x0);
+            search_region.y0 = std::max(search_region.y0, tracking_region.y0);
+            search_region.x1 = std::min(search_region.x1, tracking_region.x1);
+            search_region.y1 = std::min(search_region.y1, tracking_region.y1);
+        }
+
+        std::vector<ScalePeak> peaks;
+        peaks.reserve(64);
+        if (config_.enable_sparse_component_search) {
+            peaks = collect_sparse_multiscale_peaks(
+                rgb, image_width, image_height, search_region, config_,
+                tracker_.tracking_confirmed());
+        } else {
+        const int source_search_width =
+            std::max(0, search_region.x1 - search_region.x0);
+        const int source_search_height =
+            std::max(0, search_region.y1 - search_region.y0);
+        const int sampling_stride = std::max(1, config_.multiscale_downsample);
+        const int search_width =
+            (source_search_width + sampling_stride - 1) / sampling_stride;
+        const int search_height =
+            (source_search_height + sampling_stride - 1) / sampling_stride;
+        IntegralPlane<uint32_t> green_integral(search_width, search_height);
+        IntegralPlane<uint32_t> brightness_integral(search_width, search_height);
+        IntegralPlane<uint64_t> brightness_squared_integral(
+            search_width, search_height);
+        for (int y = 0; y < search_height; ++y) {
+            uint32_t green_row_sum = 0;
+            uint32_t brightness_row_sum = 0;
+            uint64_t brightness_squared_row_sum = 0;
+            const int image_y = std::min(
+                search_region.y1 - 1,
+                search_region.y0 + y * sampling_stride + sampling_stride / 2);
+            for (int x = 0; x < search_width; ++x) {
+                const int image_x = std::min(
+                    search_region.x1 - 1,
+                    search_region.x0 + x * sampling_stride +
+                        sampling_stride / 2);
+                const std::size_t offset =
+                    (static_cast<std::size_t>(image_y) * image_width +
+                     image_x) * 3U;
+                const uint8_t red = rgb[offset];
+                const uint8_t green = rgb[offset + 1];
+                const uint8_t blue = rgb[offset + 2];
+                green_row_sum += fast_normalized_green_response(
+                    red, green, blue);
+                const uint32_t brightness =
+                    (77U * red + 150U * green + 29U * blue) >> 8U;
+                brightness_row_sum += brightness;
+                brightness_squared_row_sum +=
+                    static_cast<uint64_t>(brightness) * brightness;
+                green_integral.at(x + 1, y + 1) =
+                    green_integral.at(x + 1, y) + green_row_sum;
+                brightness_integral.at(x + 1, y + 1) =
+                    brightness_integral.at(x + 1, y) + brightness_row_sum;
+                brightness_squared_integral.at(x + 1, y + 1) =
+                    brightness_squared_integral.at(x + 1, y) +
+                    brightness_squared_row_sum;
+            }
+        }
+
+        for (const int configured_diameter : config_.multiscale_diameters_px) {
+            const int diameter = std::max(
+                2, (configured_diameter + sampling_stride - 1) /
+                       sampling_stride);
+            const int radius = std::max(1, diameter / 2);
+            const int ring_margin = std::max(
+                1, (2 + sampling_stride - 1) / sampling_stride);
+            const int outer_radius = std::max(radius + ring_margin, diameter);
+            const int inner_side = 2 * radius + 1;
+            const int outer_side = 2 * outer_radius + 1;
+            const int inner_area = inner_side * inner_side;
+            const int outer_area = outer_side * outer_side;
+            const int ring_area = std::max(1, outer_area - inner_area);
+            const float inner_normalizer =
+                1.0F / (255.0F * static_cast<float>(inner_area));
+            const float ring_normalizer =
+                1.0F / (255.0F * static_cast<float>(ring_area));
+            const float ring_squared_normalizer =
+                1.0F / (255.0F * 255.0F *
+                        static_cast<float>(ring_area));
+            const int minimum_step =
+                tracker_.tracking_confirmed() && tracker_.missed_frames() == 0
+                    ? config_.multiscale_tracking_min_scan_step_px
+                    : config_.multiscale_min_scan_step_px;
+            const int sampled_minimum_step = std::max(
+                1, (minimum_step + sampling_stride - 1) / sampling_stride);
+            const int step = std::max(sampled_minimum_step, diameter / 3);
+            std::vector<ScalePeak> scale_peaks;
+            scale_peaks.reserve(16);
+            for (int y = outer_radius; y < search_height - outer_radius;
+                 y += step) {
+                for (int x = outer_radius; x < search_width - outer_radius;
+                     x += step) {
+                    // The loop bounds already keep both windows inside the
+                    // sampled image. Avoid clipping and its min/max branches
+                    // in this hottest loop.
+                    const Rect inner{x - radius, y - radius,
+                                     x + radius + 1, y + radius + 1};
+                    const Rect outer{x - outer_radius, y - outer_radius,
+                                     x + outer_radius + 1,
+                                     y + outer_radius + 1};
+                    const float inner_green =
+                        static_cast<float>(green_integral.sum(inner)) *
+                        inner_normalizer;
+                    const float inner_brightness =
+                        static_cast<float>(brightness_integral.sum(inner)) *
+                        inner_normalizer;
+                    const float ring_green =
+                        static_cast<float>(green_integral.sum(outer) -
+                                           green_integral.sum(inner)) *
+                        ring_normalizer;
+                    const float ring_brightness =
+                        static_cast<float>(brightness_integral.sum(outer) -
+                                           brightness_integral.sum(inner)) *
+                        ring_normalizer;
+                    const float brightness_contrast =
+                        inner_brightness - ring_brightness;
+                    const float response = inner_green - ring_green +
+                        config_.normalized_brightness_weight *
+                            std::max(-0.10F, brightness_contrast);
+                    if (response < config_.min_normalized_green_response ||
+                        inner_green < config_.min_normalized_green_response ||
+                        inner_brightness <
+                            config_.min_normalized_inner_brightness) {
+                        continue;
+                    }
+
+                    // Variance and sqrt are needed only for the small number
+                    // of positions that pass the cheap green/brightness gate.
+                    const float ring_brightness_squared =
+                        static_cast<float>(
+                            brightness_squared_integral.sum(outer) -
+                            brightness_squared_integral.sum(inner)) *
+                        ring_squared_normalizer;
+                    const float ring_variance = std::max(
+                        0.0F, ring_brightness_squared -
+                                  ring_brightness * ring_brightness);
+                    const float contrast_z = brightness_contrast /
+                        std::sqrt(ring_variance + 0.0025F);
+                    const float minimum_contrast_z = tracker_.tracking_confirmed()
+                        ? config_.min_tracking_normalized_contrast_z
+                        : config_.min_normalized_contrast_z;
+                    if (contrast_z < minimum_contrast_z) {
+                        continue;
+                    }
+                    const int peak_x = std::min(
+                        search_region.x1 - 1,
+                        search_region.x0 + x * sampling_stride +
+                            sampling_stride / 2);
+                    const int peak_y = std::min(
+                        search_region.y1 - 1,
+                        search_region.y0 + y * sampling_stride +
+                            sampling_stride / 2);
+                    ScalePeak peak{peak_x, peak_y,
+                                   configured_diameter, response, inner_green,
+                                   inner_brightness, brightness_contrast,
+                                   contrast_z};
+                    scale_peaks.push_back(peak);
+                }
+            }
+            std::sort(scale_peaks.begin(), scale_peaks.end(),
+                      [](const ScalePeak &left, const ScalePeak &right) {
+                          return left.response > right.response;
+                      });
+            if (scale_peaks.size() > 12U) {
+                scale_peaks.resize(12U);
+            }
+            peaks.insert(peaks.end(), scale_peaks.begin(), scale_peaks.end());
+        }
+        }
+
+        std::sort(peaks.begin(), peaks.end(),
+                  [](const ScalePeak &left, const ScalePeak &right) {
+                      return left.response > right.response;
+                  });
+        std::vector<ScalePeak> accepted_peaks;
+        accepted_peaks.reserve(config_.max_green_candidates);
+        for (const auto &peak : peaks) {
+            bool overlaps_existing = false;
+            for (const auto &candidate : candidates) {
+                const float dx = peak.x - candidate.observation.center_x;
+                const float dy = peak.y - candidate.observation.center_y;
+                const float nms_radius = std::max(
+                    2.0F, 0.65F * std::max(
+                        static_cast<float>(peak.diameter),
+                        candidate.observation.apparent_size));
+                if (dx * dx + dy * dy <= nms_radius * nms_radius) {
+                    overlaps_existing = true;
+                    break;
+                }
+            }
+            for (const auto &accepted : accepted_peaks) {
+                const float dx = static_cast<float>(peak.x - accepted.x);
+                const float dy = static_cast<float>(peak.y - accepted.y);
+                const float nms_radius =
+                    0.65F * std::max(peak.diameter, accepted.diameter);
+                if (dx * dx + dy * dy <= nms_radius * nms_radius) {
+                    overlaps_existing = true;
+                    break;
+                }
+            }
+            if (overlaps_existing) {
+                continue;
+            }
+
+            const int radius = std::max(1, peak.diameter / 2);
+            const Rect inner = clip_rect(peak.x - radius, peak.y - radius,
+                                         2 * radius + 1, 2 * radius + 1,
+                                         image_width, image_height);
+            float weighted_x = 0.0F;
+            float weighted_y = 0.0F;
+            float weight_sum = 0.0F;
+            for (int y = inner.y0; y < inner.y1; ++y) {
+                for (int x = inner.x0; x < inner.x1; ++x) {
+                    const std::size_t offset =
+                        (static_cast<std::size_t>(y) * image_width + x) * 3U;
+                    const float red = rgb[offset];
+                    const float green = rgb[offset + 1];
+                    const float blue = rgb[offset + 2];
+                    const float response =
+                        normalized_green_response(red, green, blue);
+                    weighted_x += response * x;
+                    weighted_y += response * y;
+                    weight_sum += response;
+                }
+            }
+            const float center_x = weight_sum > 1.0e-5F
+                                       ? weighted_x / weight_sum
+                                       : static_cast<float>(peak.x);
+            const float center_y = weight_sum > 1.0e-5F
+                                       ? weighted_y / weight_sum
+                                       : static_cast<float>(peak.y);
+            detail::CandidateObservation observation;
+            observation.center_x = center_x;
+            observation.center_y = center_y;
+            observation.bbox_x = inner.x0;
+            observation.bbox_y = inner.y0;
+            observation.bbox_w = inner.x1 - inner.x0;
+            observation.bbox_h = inner.y1 - inner.y0;
+            observation.apparent_size = static_cast<float>(peak.diameter);
+            observation.source = detail::CandidateSource::NormalizedResponse;
+            observation.association_score = tracker_.association_score(observation);
+            const float response_score = clamp01(
+                (peak.response - config_.min_normalized_green_response) /
+                std::max(0.02F, 0.30F - config_.min_normalized_green_response));
+            observation.score = clamp01(
+                0.55F * response_score +
+                0.20F * clamp01(peak.green_mean / 0.45F) +
+                0.25F * observation.association_score);
+
+            Candidate candidate;
+            candidate.observation = observation;
+            candidate.debug.center_x = center_x;
+            candidate.debug.center_y = center_y;
+            candidate.debug.bbox_x = observation.bbox_x;
+            candidate.debug.bbox_y = observation.bbox_y;
+            candidate.debug.bbox_w = observation.bbox_w;
+            candidate.debug.bbox_h = observation.bbox_h;
+            candidate.debug.apparent_size = observation.apparent_size;
+            candidate.debug.green_dominance = peak.green_mean;
+            candidate.debug.green_fraction = 1.0F;
+            candidate.debug.local_contrast = peak.brightness_contrast;
+            candidate.debug.shape_score = 1.0F;
+            candidate.debug.temporal_score = observation.association_score;
+            candidate.debug.score = observation.score;
+            candidate.debug.normalized_response = peak.response;
+            candidate.debug.inside_capture_cone = point_inside_capture_cone(
+                center_x, center_y, image_width, image_height, config_);
+            candidates.push_back(candidate);
+            accepted_peaks.push_back(peak);
+            if (accepted_peaks.size() >=
+                static_cast<std::size_t>(config_.max_green_candidates)) {
+                break;
+            }
+        }
+    }
+
     if (!config_.enable_saturated_core_candidates) {
+        std::sort(candidates.begin(), candidates.end(),
+                  [](const Candidate &left, const Candidate &right) {
+                      return left.observation.score > right.observation.score;
+                  });
+        if (candidates.size() >
+            static_cast<std::size_t>(config_.max_green_candidates)) {
+            candidates.resize(config_.max_green_candidates);
+        }
         return candidates;
     }
     const float core_size_weight = config_.weight_core_size;
@@ -499,7 +1635,7 @@ GreenLightDetector::collect_candidates(maix::image::Image &frame)
 
         const float temporal_score = tracker_.association_score(observation);
         observation.association_score = temporal_score;
-        if (tracker_.tracking_confirmed() &&
+        if (tracker_.tracking_confirmed() && tracker_.missed_frames() == 0 &&
             !tracker_.passes_association_gate(observation)) {
             continue;
         }
@@ -535,21 +1671,210 @@ GreenLightDetector::collect_candidates(maix::image::Image &frame)
         candidate.debug.initial_size_score = initial_size_score;
         candidate.debug.score = observation.score;
         candidate.debug.saturated_core = true;
+        candidate.debug.inside_capture_cone = point_inside_capture_cone(
+            center_x, center_y, image_width, image_height, config_);
         candidates.push_back(candidate);
+    }
+
+    std::sort(candidates.begin(), candidates.end(),
+              [](const Candidate &left, const Candidate &right) {
+                  return left.observation.score > right.observation.score;
+              });
+    if (candidates.size() >
+        static_cast<std::size_t>(config_.max_green_candidates)) {
+        candidates.resize(config_.max_green_candidates);
     }
 
     return candidates;
 }
 
-GreenLightDetection GreenLightDetector::process(maix::image::Image &frame,
-                                                 uint64_t timestamp_us)
+void GreenLightDetector::update_candidate_hypotheses(
+    std::vector<Candidate> &candidates,
+    uint64_t timestamp_us,
+    const MotionPrior *motion_prior)
+{
+    if (motion_prior != nullptr && motion_prior->image_transform_valid &&
+        motion_prior->confidence > 0.0F) {
+        const float cx = config_.camera_model.principal_x;
+        const float cy = config_.camera_model.principal_y;
+        const float cosine = std::cos(motion_prior->image_rotation_rad);
+        const float sine = std::sin(motion_prior->image_rotation_rad);
+        const float scale = std::max(0.5F, std::min(2.0F,
+                                                   motion_prior->image_scale));
+        for (auto &hypothesis : candidate_hypotheses_) {
+            if (!hypothesis.active) {
+                continue;
+            }
+            const float x = hypothesis.x - cx;
+            const float y = hypothesis.y - cy;
+            hypothesis.x = scale * (cosine * x - sine * y) + cx +
+                           motion_prior->image_dx_px;
+            hypothesis.y = scale * (sine * x + cosine * y) + cy +
+                           motion_prior->image_dy_px;
+            hypothesis.apparent_size *= scale;
+        }
+    }
+
+    std::vector<int> candidate_assignment(candidates.size(), -1);
+    for (std::size_t hypothesis_index = 0;
+         hypothesis_index < candidate_hypotheses_.size(); ++hypothesis_index) {
+        auto &hypothesis = candidate_hypotheses_[hypothesis_index];
+        if (!hypothesis.active) {
+            continue;
+        }
+        const float dt = hypothesis.timestamp_us > 0 &&
+                                 timestamp_us > hypothesis.timestamp_us
+                             ? std::min(0.1F, static_cast<float>(
+                                   timestamp_us - hypothesis.timestamp_us) *
+                                   1.0e-6F)
+                             : 0.0F;
+        const float predicted_x = hypothesis.x + hypothesis.velocity_x * dt;
+        const float predicted_y = hypothesis.y + hypothesis.velocity_y * dt;
+        const float gate = std::max(
+            config_.confirmation_gate_px,
+            config_.gate_size_factor * hypothesis.apparent_size);
+        int best_candidate = -1;
+        float best_cost = std::numeric_limits<float>::max();
+        for (std::size_t candidate_index = 0;
+             candidate_index < candidates.size(); ++candidate_index) {
+            if (candidate_assignment[candidate_index] >= 0) {
+                continue;
+            }
+            const auto &observation = candidates[candidate_index].observation;
+            const float distance = std::hypot(observation.center_x - predicted_x,
+                                              observation.center_y - predicted_y);
+            const float size_delta = std::fabs(std::log(
+                std::max(1.0F, observation.apparent_size) /
+                std::max(1.0F, hypothesis.apparent_size)));
+            const float appearance = std::max(
+                candidates[candidate_index].debug.normalized_response,
+                candidates[candidate_index].debug.green_dominance);
+            const float appearance_delta =
+                std::fabs(appearance - hypothesis.appearance);
+            if (distance > gate ||
+                size_delta > config_.max_cross_source_log_size_jump) {
+                continue;
+            }
+            const float cost = distance / gate + 0.25F * size_delta +
+                               0.20F * appearance_delta;
+            if (cost < best_cost) {
+                best_cost = cost;
+                best_candidate = static_cast<int>(candidate_index);
+            }
+        }
+        if (best_candidate < 0) {
+            ++hypothesis.misses;
+            hypothesis.timestamp_us = timestamp_us;
+            hypothesis.x = predicted_x;
+            hypothesis.y = predicted_y;
+            hypothesis.confidence *= 0.75F;
+            if (hypothesis.misses > 5) {
+                hypothesis = CandidateHypothesis{};
+            }
+            continue;
+        }
+
+        auto &candidate = candidates[best_candidate];
+        const float inverse_dt = dt > 1.0e-4F ? 1.0F / dt : 0.0F;
+        const float measured_velocity_x =
+            (candidate.observation.center_x - hypothesis.x) * inverse_dt;
+        const float measured_velocity_y =
+            (candidate.observation.center_y - hypothesis.y) * inverse_dt;
+        hypothesis.velocity_x = 0.65F * hypothesis.velocity_x +
+                                0.35F * measured_velocity_x;
+        hypothesis.velocity_y = 0.65F * hypothesis.velocity_y +
+                                0.35F * measured_velocity_y;
+        hypothesis.x = candidate.observation.center_x;
+        hypothesis.y = candidate.observation.center_y;
+        hypothesis.apparent_size = 0.70F * hypothesis.apparent_size +
+                                   0.30F * candidate.observation.apparent_size;
+        const float appearance = std::max(candidate.debug.normalized_response,
+                                          candidate.debug.green_dominance);
+        hypothesis.appearance = 0.70F * hypothesis.appearance +
+                                0.30F * appearance;
+        hypothesis.timestamp_us = timestamp_us;
+        hypothesis.misses = 0;
+        ++hypothesis.hits;
+        hypothesis.confidence = clamp01(
+            0.65F * hypothesis.confidence +
+            0.35F * candidate.observation.score);
+        const float track_consistency = clamp01(
+            (1.0F - std::min(1.0F, best_cost)) *
+            std::min(1.0F, hypothesis.hits / 3.0F));
+        candidate.observation.association_score = std::max(
+            candidate.observation.association_score, track_consistency);
+        candidate.observation.score = clamp01(
+            0.85F * candidate.observation.score +
+            0.15F * track_consistency);
+        candidate.debug.temporal_score =
+            candidate.observation.association_score;
+        candidate.debug.score = candidate.observation.score;
+        candidate_assignment[best_candidate] =
+            static_cast<int>(hypothesis_index);
+    }
+
+    for (std::size_t candidate_index = 0;
+         candidate_index < candidates.size(); ++candidate_index) {
+        if (candidate_assignment[candidate_index] >= 0) {
+            continue;
+        }
+        auto free_hypothesis = std::find_if(
+            candidate_hypotheses_.begin(), candidate_hypotheses_.end(),
+            [](const CandidateHypothesis &hypothesis) {
+                return !hypothesis.active;
+            });
+        if (free_hypothesis == candidate_hypotheses_.end()) {
+            break;
+        }
+        const auto &candidate = candidates[candidate_index];
+        free_hypothesis->active = true;
+        free_hypothesis->x = candidate.observation.center_x;
+        free_hypothesis->y = candidate.observation.center_y;
+        free_hypothesis->apparent_size = candidate.observation.apparent_size;
+        free_hypothesis->appearance = std::max(
+            candidate.debug.normalized_response,
+            candidate.debug.green_dominance);
+        free_hypothesis->confidence = candidate.observation.score;
+        free_hypothesis->timestamp_us = timestamp_us;
+        free_hypothesis->hits = 1;
+    }
+}
+
+GreenLightDetection GreenLightDetector::process_green(
+    maix::image::Image &frame,
+    uint64_t timestamp_us,
+    const MotionPrior *motion_prior)
 {
     if (frame.format() != maix::image::Format::FMT_RGB888) {
         throw std::invalid_argument("GreenLightDetector requires an RGB888 frame");
     }
 
     tracker_.predict(timestamp_us);
+    if (motion_prior != nullptr) {
+        tracker_.apply_motion_prior(*motion_prior);
+    }
+
+    const uint64_t current_frame = frame_counter_++;
+    const int effective_classical_interval = npu_config_.enabled
+        ? std::max(2, config_.classical_interval_frames)
+        : config_.classical_interval_frames;
+    const bool run_classical_detection =
+        current_frame % static_cast<uint64_t>(
+            effective_classical_interval) == 0;
+    last_classical_detection_ran_ = run_classical_detection;
+    last_classical_detection_ms_ = 0.0F;
+    if (!run_classical_detection) {
+        // This is an intentional scheduler coast, not an observation failure.
+        // Preserve candidates for the NPU slot and do not consume the miss
+        // budget used by the REACQUIRE state machine.
+        return tracker_.update(nullptr, timestamp_us, config_.camera_model,
+                               false);
+    }
+
+    const auto detection_started = std::chrono::steady_clock::now();
+    ++classical_detection_count_;
     auto candidates = collect_candidates(frame);
+    update_candidate_hypotheses(candidates, timestamp_us, motion_prior);
     last_candidates_.clear();
     last_candidates_.reserve(candidates.size());
     for (const auto &candidate : candidates) {
@@ -562,20 +1887,44 @@ GreenLightDetection GreenLightDetector::process(maix::image::Image &frame,
     int selected_index = -1;
     float best_score = minimum_score;
     for (std::size_t index = 0; index < candidates.size(); ++index) {
+        if (!candidates[index].debug.inside_capture_cone) {
+            continue;
+        }
         if (candidates[index].observation.score >= best_score) {
             best_score = candidates[index].observation.score;
             selected_index = static_cast<int>(index);
         }
     }
 
+    GreenLightDetection result;
     if (selected_index < 0) {
-        return tracker_.update(nullptr, timestamp_us, config_.camera_model);
+        result = tracker_.update(nullptr, timestamp_us, config_.camera_model);
+    } else {
+        last_candidates_[selected_index].selected = true;
+    // After any missed frame the next plausible full-cone candidate is allowed
+    // to start a fresh confirmation sequence. This provides true REACQUIRE
+    // behavior instead of keeping the previous narrow association gate until
+    // max_missed_frames expires.
+        if (tracker_.tracking_confirmed() && tracker_.missed_frames() > 0 &&
+            !tracker_.passes_association_gate(
+                candidates[selected_index].observation)) {
+            tracker_.reset();
+        }
+        result = tracker_.update(&candidates[selected_index].observation,
+                                 timestamp_us,
+                                 config_.camera_model);
     }
+    const auto detection_finished = std::chrono::steady_clock::now();
+    last_classical_detection_ms_ = static_cast<float>(
+        std::chrono::duration<double, std::milli>(
+            detection_finished - detection_started).count());
+    return result;
+}
 
-    last_candidates_[selected_index].selected = true;
-    return tracker_.update(&candidates[selected_index].observation,
-                           timestamp_us,
-                           config_.camera_model);
+GreenLightDetection GreenLightDetector::process(maix::image::Image &frame,
+                                                 uint64_t timestamp_us)
+{
+    return process_green(frame, timestamp_us, nullptr);
 }
 
 }  // namespace dart

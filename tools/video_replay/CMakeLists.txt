@@ -9,6 +9,9 @@ add_executable(dart_video_replay
     ../../main/src/config.cpp
     ../../main/src/green_detector.cpp
     ../../main/src/green_detector_core.cpp
+    ../../main/src/target_fusion.cpp
+    ../../main/src/target_json.cpp
+    ../../main/src/visual_motion.cpp
 )
 
 target_compile_features(dart_video_replay PRIVATE cxx_std_17)

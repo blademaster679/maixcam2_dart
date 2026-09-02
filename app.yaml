@@ -1,10 +1,11 @@
 id: dart_green_detect
-name: Dart Green Light Detector
-name[zh]: 飞镖绿灯识别
-version: 0.1.4
+name: Dart Target Guidance
+name[zh]: 飞镖目标制导
+version: 0.2.0
 author: RoboMaster Team
-desc: Headless green light detector for MaixCAM2
-desc[zh]: 用于 MaixCAM2 的无界面绿灯识别程序
+desc: Hybrid lamp and armor guidance for MaixCAM2
+desc[zh]: 用于 MaixCAM2 的绿灯与装甲板混合制导程序
 files:
   config/green_detector.conf: green_detector.conf
   main.sh: main.sh
+  models/runtime: models

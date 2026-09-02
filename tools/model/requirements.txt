@@ -1,0 +1,5 @@
+ultralytics>=8.3,<9
+onnx>=1.16
+onnxsim>=0.4.36
+opencv-python>=4.8
+PyYAML>=6

@@ -5,6 +5,22 @@
 APP_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 cd "$APP_DIR" || exit 1
 
+# MaixCDK currently copies the ALSA linker names while libms_asr requests the
+# SONAMEs. Materialize the aliases inside the app so a clean board does not
+# depend on system-wide ALSA packages.
+for SONAME_PAIR in "libasound.so.2:libasound.so" \
+                   "libatopology.so.2:libatopology.so"; do
+    SONAME=${SONAME_PAIR%%:*}
+    LIBRARY=${SONAME_PAIR#*:}
+    if [ ! -e "$APP_DIR/dl_lib/$SONAME" ] && \
+       [ -e "$APP_DIR/dl_lib/$LIBRARY" ]; then
+        ln -s "$LIBRARY" "$APP_DIR/dl_lib/$SONAME" || {
+            echo "Failed to create $SONAME runtime alias" >&2
+            exit 126
+        }
+    fi
+done
+
 # dl_lib contains application dependencies. /opt/lib contains the MaixCAM2
 # platform runtime (libax_*.so, libmaixcam_lib.so, and related libraries).
 # Preserve any paths already supplied by the system or Launcher.

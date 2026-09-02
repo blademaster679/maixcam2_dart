@@ -1,0 +1,9 @@
+# Replace path with the absolute dataset root before training.
+path: /absolute/path/to/dart_pose_dataset
+train: images/train
+val: images/val
+test: images/test
+kpt_shape: [5, 3]
+flip_idx: [0, 3, 4, 1, 2]
+names:
+  0: dart_target

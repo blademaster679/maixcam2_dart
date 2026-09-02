@@ -1,4 +1,6 @@
 #include "dart/green_detector.hpp"
+#include "dart/target_json.hpp"
+#include "dart/visual_motion.hpp"
 
 #include "maix_basic.hpp"
 #include "maix_camera.hpp"
@@ -41,61 +43,6 @@ CommandLine parse_command_line(int argc, char **argv)
     return result;
 }
 
-void write_detection_json(std::ostream &output,
-                          const dart::GreenLightDetection &detection)
-{
-    output << std::fixed << std::setprecision(6)
-           << "{\"timestamp_us\":" << detection.timestamp_us
-           << ",\"valid\":" << (detection.valid ? "true" : "false")
-           << ",\"state\":\"" << dart::track_state_name(detection.state) << '"'
-           << ",\"center_x\":" << detection.center_x
-           << ",\"center_y\":" << detection.center_y
-           << ",\"bbox_x\":" << detection.bbox_x
-           << ",\"bbox_y\":" << detection.bbox_y
-           << ",\"bbox_w\":" << detection.bbox_w
-           << ",\"bbox_h\":" << detection.bbox_h
-           << ",\"apparent_size\":" << detection.apparent_size
-           << ",\"yaw_rad\":" << detection.yaw_rad
-           << ",\"pitch_rad\":" << detection.pitch_rad
-           << ",\"confidence\":" << detection.confidence
-           << '}';
-}
-
-void write_candidates_json(
-    std::ostream &output,
-    const std::vector<dart::GreenLightCandidateDebug> &candidates)
-{
-    output << '[';
-    for (std::size_t index = 0; index < candidates.size(); ++index) {
-        if (index > 0) {
-            output << ',';
-        }
-        const auto &candidate = candidates[index];
-        output << std::fixed << std::setprecision(6)
-               << "{\"center_x\":" << candidate.center_x
-               << ",\"center_y\":" << candidate.center_y
-               << ",\"bbox_x\":" << candidate.bbox_x
-               << ",\"bbox_y\":" << candidate.bbox_y
-               << ",\"bbox_w\":" << candidate.bbox_w
-               << ",\"bbox_h\":" << candidate.bbox_h
-               << ",\"apparent_size\":" << candidate.apparent_size
-               << ",\"density\":" << candidate.density
-               << ",\"green_dominance\":" << candidate.green_dominance
-               << ",\"local_contrast\":" << candidate.local_contrast
-               << ",\"shape_score\":" << candidate.shape_score
-               << ",\"core_score\":" << candidate.core_score
-               << ",\"temporal_score\":" << candidate.temporal_score
-               << ",\"center_prior_score\":" << candidate.center_prior_score
-               << ",\"initial_size_score\":" << candidate.initial_size_score
-               << ",\"score\":" << candidate.score
-               << ",\"saturated_core\":"
-               << (candidate.saturated_core ? "true" : "false")
-               << ",\"selected\":" << (candidate.selected ? "true" : "false")
-               << '}';
-    }
-    output << ']';
-}
-
 void save_debug_frame(maix::image::Image &frame,
                       const dart::GreenLightDetection &detection,
                       const std::vector<dart::GreenLightCandidateDebug> &candidates,
@@ -118,9 +65,9 @@ void save_debug_frame(maix::image::Image &frame,
         return;
     }
     metadata << "{\"detection\":";
-    write_detection_json(metadata, detection);
+    dart::write_green_detection_json(metadata, detection);
     metadata << ",\"candidates\":";
-    write_candidates_json(metadata, candidates);
+    dart::write_candidate_list_json(metadata, candidates);
     metadata << "}\n";
 }
 
@@ -151,6 +98,22 @@ void apply_camera_settings(maix::camera::Camera &camera,
     camera.skip_frames(3);
 }
 
+long read_resident_memory_kb()
+{
+    std::ifstream status("/proc/self/status");
+    std::string key;
+    while (status >> key) {
+        if (key == "VmRSS:") {
+            long value = 0;
+            status >> value;
+            return value;
+        }
+        std::string remainder;
+        std::getline(status, remainder);
+    }
+    return -1;
+}
+
 int run(int argc, char **argv)
 {
     const CommandLine command_line = parse_command_line(argc, argv);
@@ -176,10 +139,18 @@ int run(int argc, char **argv)
                                  config.debug.directory);
     }
 
-    dart::GreenLightDetector detector(config.detector);
+    const auto pose_validator = dart::create_yolo_pose_validator(config.npu);
+    dart::GreenLightDetector detector(config.detector,
+                                      config.armor,
+                                      config.target_geometry,
+                                      config.npu,
+                                      pose_validator);
+    dart::VisualMotionEstimator visual_motion(config.visual_motion);
     dart::TrackState previous_state = dart::TrackState::Lost;
     uint64_t frame_index = 0;
+    uint64_t previous_capture_timestamp_us = 0;
     int saved_frames = 0;
+    long resident_memory_kb = read_resident_memory_kb();
 
     while (!maix::app::need_exit()) {
         std::unique_ptr<maix::image::Image> frame(camera.read(true, -1));
@@ -189,10 +160,62 @@ int run(int argc, char **argv)
         }
 
         const uint64_t timestamp_us = maix::time::ticks_us();
-        const dart::GreenLightDetection detection =
-            detector.process(*frame, timestamp_us);
-        write_detection_json(std::cout, detection);
-        std::cout << '\n' << std::flush;
+        const uint64_t capture_interval_us = previous_capture_timestamp_us == 0
+                                                 ? 0
+                                                 : timestamp_us -
+                                                       previous_capture_timestamp_us;
+        previous_capture_timestamp_us = timestamp_us;
+        const uint64_t processing_started_us = maix::time::ticks_us();
+        const bool visual_motion_allowed =
+            !config.visual_motion.tracking_only ||
+            previous_state == dart::TrackState::Tracking;
+        if (config.visual_motion.tracking_only && !visual_motion_allowed) {
+            visual_motion.reset();
+        }
+        const bool visual_motion_ran = config.visual_motion.enabled &&
+            visual_motion_allowed &&
+            frame_index % static_cast<uint64_t>(
+                config.visual_motion.interval_frames) == 0;
+        const uint64_t visual_motion_started_us = maix::time::ticks_us();
+        dart::MotionPrior motion_prior;
+        if (visual_motion_ran) {
+            motion_prior = visual_motion.update(*frame, timestamp_us);
+        }
+        const uint64_t visual_motion_finished_us = maix::time::ticks_us();
+        const dart::TargetEstimate target = detector.process(
+            *frame, timestamp_us, motion_prior.valid ? &motion_prior : nullptr);
+        const uint64_t processing_finished_us = maix::time::ticks_us();
+        const auto &detection = target.green;
+        if (frame_index % 60U == 0U) {
+            resident_memory_kb = read_resident_memory_kb();
+        }
+        const bool write_json_log =
+            config.debug.json_log_every_n_frames > 0 &&
+            frame_index % static_cast<uint64_t>(
+                config.debug.json_log_every_n_frames) == 0;
+        if (write_json_log) {
+            std::ostringstream runtime_fields;
+            runtime_fields << std::fixed << std::setprecision(6)
+                           << ",\"frame\":" << frame_index
+                           << ",\"processing_ms\":"
+                           << (processing_finished_us - processing_started_us) /
+                                  1000.0
+                           << ",\"visual_motion_ran\":"
+                           << (visual_motion_ran ? "true" : "false")
+                           << ",\"visual_motion_ms\":"
+                           << (visual_motion_finished_us -
+                               visual_motion_started_us) / 1000.0
+                           << ",\"capture_interval_us\":"
+                           << capture_interval_us
+                           << ",\"rss_kb\":" << resident_memory_kb;
+            const auto *logged_candidates = config.debug.log_candidates
+                ? &detector.last_candidates()
+                : nullptr;
+            dart::write_target_estimate_json(std::cout, target,
+                                             logged_candidates,
+                                             runtime_fields.str());
+            std::cout << '\n' << std::flush;
+        }
 
         const bool periodic_save = config.debug.save_every_n_frames > 0 &&
                                    frame_index % config.debug.save_every_n_frames == 0;

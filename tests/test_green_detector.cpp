@@ -1,9 +1,13 @@
 #include "dart/green_detector.hpp"
+#include "dart/target_json.hpp"
+#include "dart/visual_motion.hpp"
 
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -84,6 +88,8 @@ void test_confirmation_and_loss()
                                 config.camera_model);
         check(result.state == dart::TrackState::Tracking,
               "TRACKING is retained before the fifth consecutive miss");
+        check(result.valid && result.predicted,
+              "a confirmed track bridges a short observation dropout");
     }
     result = tracker.update(nullptr, 1116669, config.camera_model);
     check(result.state == dart::TrackState::Lost, "fifth miss returns to LOST");
@@ -102,6 +108,29 @@ void test_sparse_three_of_five_confirmation()
     const auto result = tracker.update(&candidate, 1040000, config.camera_model);
     check(result.state == dart::TrackState::Tracking,
           "three non-consecutive hits in five frames confirm tracking");
+}
+
+void test_prediction_timeout_and_recovery()
+{
+    dart::DetectorConfig config;
+    config.max_missed_frames = 10;
+    config.prediction_max_age_ms = 40;
+    dart::detail::TemporalTracker tracker(config);
+    const auto candidate = observation(320.0F, 180.0F, 20.0F);
+    tracker.update(&candidate, 1000000, config.camera_model);
+    tracker.update(&candidate, 1010000, config.camera_model);
+    tracker.update(&candidate, 1020000, config.camera_model);
+
+    auto result = tracker.update(nullptr, 1040000, config.camera_model);
+    check(result.valid && result.predicted && result.bbox_w > 0,
+          "prediction is control-valid inside its time budget");
+    result = tracker.update(nullptr, 1070000, config.camera_model);
+    check(!result.valid && !result.predicted &&
+              result.state == dart::TrackState::Tracking,
+          "an expired prediction is withheld before the track is reset");
+    result = tracker.update(&candidate, 1080000, config.camera_model);
+    check(result.valid && !result.predicted,
+          "a fresh measurement resumes observed output after timeout");
 }
 
 void test_growing_size_tracker()
@@ -169,8 +198,10 @@ void test_hard_association_gate()
 
     const auto rejected = tracker.update(&far_distractor, 1050001,
                                          config.camera_model);
-    check(!rejected.valid && rejected.state == dart::TrackState::Tracking,
-          "rejected measurement produces an invalid prediction-only frame");
+    check(rejected.valid && rejected.predicted &&
+              rejected.state == dart::TrackState::Tracking &&
+              std::fabs(rejected.center_x - 320.0F) < 3.0F,
+          "rejected measurement coasts the prior track without following it");
     const auto recovered = tracker.update(&target, 1066668, config.camera_model);
     check(recovered.valid && std::fabs(recovered.center_x - 320.0F) < 3.0F,
           "rejected distractor does not pull the Kalman state");
@@ -219,6 +250,8 @@ void test_single_pixel_and_reflection()
 void test_large_growth_and_partial_frame()
 {
     dart::DetectorConfig config;
+    // This test verifies the blob-center fusion used by the legacy path.
+    config.enable_normalized_multiscale = false;
     dart::GreenLightDetector detector(config);
     uint64_t timestamp = 1000000;
     float previous_size = 0.0F;
@@ -269,6 +302,8 @@ void test_short_occlusion_and_multiple_candidates()
         const auto result = detector.process(blank, timestamp);
         check(result.state == dart::TrackState::Tracking,
               "short occlusion does not drop TRACKING state");
+        check(result.valid && result.predicted,
+              "short occlusion returns a marked prediction");
         timestamp += 16667;
     }
 
@@ -287,9 +322,64 @@ void test_short_occlusion_and_multiple_candidates()
           "target is reacquired after a short occlusion");
 }
 
+maix::image::Image low_contrast_green_blob(int center_x, int center_y)
+{
+    maix::image::Image image(120, 90);
+    image.fill_rect(0, 0, 120, 90, 165, 165, 165);
+    image.fill_rect(center_x - 4, center_y - 4, 8, 8, 60, 200, 120);
+    image.set_blobs(
+        {maix::image::Blob(center_x - 4, center_y - 4, 8, 8,
+                           static_cast<float>(center_x),
+                           static_cast<float>(center_y), 64, 0.9F)},
+        {});
+    return image;
+}
+
+void test_tracking_only_contrast_relaxation()
+{
+    dart::DetectorConfig config;
+    // This case isolates the legacy LAB track-maintenance relaxation. The
+    // normalized multi-scale path has its own acquisition tests below.
+    config.enable_normalized_multiscale = false;
+    config.min_local_contrast = -0.04F;
+    config.min_tracking_local_contrast = -0.08F;
+    config.contrast_relax_min_association = 0.75F;
+    config.gate_min_px = 40.0F;
+    config.gate_max_px = 40.0F;
+
+    auto low_contrast = low_contrast_green_blob(50, 40);
+    dart::GreenLightDetector acquiring_detector(config);
+    const auto acquiring = acquiring_detector.process(low_contrast, 1000000);
+    check(acquiring.state == dart::TrackState::Lost && !acquiring.valid,
+          "low-contrast target cannot start a new track");
+
+    dart::GreenLightDetector tracking_detector(config);
+    uint64_t timestamp = 1000000;
+    for (int frame = 0; frame < 3; ++frame) {
+        auto high_contrast =
+            green_blob_image(120, 90, 46, 36, 8, 8, 50.0F, 40.0F);
+        tracking_detector.process(high_contrast, timestamp);
+        timestamp += 16667;
+    }
+    const auto maintained = tracking_detector.process(low_contrast, timestamp);
+    check(maintained.valid && maintained.state == dart::TrackState::Tracking,
+          "strongly associated low-contrast target maintains tracking");
+
+    timestamp += 16667;
+    auto weakly_associated = low_contrast_green_blob(85, 40);
+    const auto rejected =
+        tracking_detector.process(weakly_associated, timestamp);
+    check(rejected.valid && rejected.predicted &&
+              rejected.state == dart::TrackState::Tracking &&
+              std::fabs(rejected.center_x - 50.0F) < 5.0F,
+          "low-contrast distractor is rejected while the prior track coasts");
+}
+
 void test_saturated_core_with_green_ring()
 {
     dart::DetectorConfig config;
+    // Keep this assertion scoped to saturated-core candidate filtering.
+    config.enable_normalized_multiscale = false;
     config.enable_saturated_core_candidates = true;
     config.min_core_size_px = 3.0F;
     config.min_core_brightness = 0.88F;
@@ -325,12 +415,375 @@ void test_saturated_core_with_green_ring()
           "sub-minimum isolated highlights are rejected");
 }
 
+void draw_thick_line(maix::image::Image &image,
+                     float x0,
+                     float y0,
+                     float x1,
+                     float y1,
+                     int thickness,
+                     uint8_t red,
+                     uint8_t green,
+                     uint8_t blue)
+{
+    const int steps = std::max(
+        1, static_cast<int>(std::ceil(std::hypot(x1 - x0, y1 - y0) * 2.0F)));
+    const int radius = std::max(0, thickness / 2);
+    for (int step = 0; step <= steps; ++step) {
+        const float alpha = static_cast<float>(step) / steps;
+        const int x = static_cast<int>(std::lround(
+            (1.0F - alpha) * x0 + alpha * x1));
+        const int y = static_cast<int>(std::lround(
+            (1.0F - alpha) * y0 + alpha * y1));
+        for (int py = -radius; py <= radius; ++py) {
+            for (int px = -radius; px <= radius; ++px) {
+                image.set_pixel(x + px, y + py, red, green, blue);
+            }
+        }
+    }
+}
+
+maix::image::Image armor_target_image(bool rotated)
+{
+    maix::image::Image image(160, 140);
+    image.fill_rect(0, 0, 160, 140, 12, 12, 12);
+    float green_x = 80.0F;
+    float green_y = 110.0F;
+    if (rotated) {
+        constexpr float inverse_sqrt_two = 0.70710678F;
+        const float down_x = inverse_sqrt_two;
+        const float down_y = inverse_sqrt_two;
+        const float right_x = inverse_sqrt_two;
+        const float right_y = -inverse_sqrt_two;
+        const float armor_x = 70.0F;
+        const float armor_y = 55.0F;
+        green_x = armor_x + 42.0F * down_x;
+        green_y = armor_y + 42.0F * down_y;
+        for (const float side : {-1.0F, 1.0F}) {
+            const float center_x = armor_x + side * 22.0F * right_x;
+            const float center_y = armor_y + side * 22.0F * right_y;
+            draw_thick_line(image,
+                            center_x - 14.0F * down_x,
+                            center_y - 14.0F * down_y,
+                            center_x + 14.0F * down_x,
+                            center_y + 14.0F * down_y,
+                            3, 250, 8, 8);
+        }
+    } else {
+        draw_thick_line(image, 50.0F, 30.0F, 50.0F, 70.0F,
+                        3, 250, 8, 8);
+        draw_thick_line(image, 110.0F, 30.0F, 110.0F, 70.0F,
+                        3, 250, 8, 8);
+    }
+    const int lamp_x = static_cast<int>(std::lround(green_x));
+    const int lamp_y = static_cast<int>(std::lround(green_y));
+    image.fill_rect(lamp_x - 4, lamp_y - 4, 8, 8, 5, 250, 8);
+    image.set_blobs(
+        {maix::image::Blob(lamp_x - 4, lamp_y - 4, 8, 8,
+                           green_x, green_y, 64, 0.95F)},
+        {});
+    return image;
+}
+
+void test_normalized_multiscale_and_capture_cone()
+{
+    dart::DetectorConfig config;
+    config.enable_legacy_lab_candidates = false;
+    config.enable_sparse_component_search = true;
+    config.multiscale_downsample = 2;
+    config.multiscale_min_scan_step_px = 4;
+    config.multiscale_tracking_min_scan_step_px = 2;
+    config.enable_capture_cone = false;
+    config.min_candidate_score = 0.15F;
+    config.min_tracking_score = 0.10F;
+    maix::image::Image image(96, 72);
+    image.fill_rect(0, 0, 96, 72, 20, 20, 20);
+    image.fill_rect(46, 33, 5, 5, 5, 220, 8);
+    image.set_blobs({}, {});
+    dart::GreenLightDetector detector(config);
+    detector.process(image, 1000000);
+    detector.process(image, 1016667);
+    const auto detection = detector.process(image, 1033334);
+    check(detection.valid && std::fabs(detection.center_x - 48.0F) < 2.0F &&
+              std::fabs(detection.center_y - 35.0F) < 2.0F,
+          "multi-scale normalized response acquires a five-pixel lamp");
+    check(!detector.last_candidates().empty() &&
+              detector.last_candidates().front().normalized_response > 0.0F,
+          "multi-scale candidate exposes its normalized response");
+
+    maix::image::Image dark_noise(96, 72);
+    dark_noise.fill_rect(0, 0, 96, 72, 180, 180, 180);
+    dark_noise.set_pixel(48, 35, 6, 11, 4);
+    dark_noise.set_blobs({}, {});
+    dart::GreenLightDetector dark_detector(config);
+    auto dark_result = dark_detector.process(dark_noise, 1000000);
+    dark_result = dark_detector.process(dark_noise, 1016667);
+    dark_result = dark_detector.process(dark_noise, 1033334);
+    check(!dark_result.valid,
+          "dark chromatic codec noise cannot become a normalized green track");
+
+    config.enable_capture_cone = true;
+    config.capture_cone_deg = 1.0F;
+    config.camera_model.fx = 400.0F;
+    config.camera_model.fy = 400.0F;
+    config.camera_model.principal_x = 48.0F;
+    config.camera_model.principal_y = 36.0F;
+    auto outside = green_blob_image(96, 72, 78, 33, 5, 5, 80.0F, 35.0F);
+    dart::GreenLightDetector cone_detector(config);
+    auto cone_result = cone_detector.process(outside, 1000000);
+    cone_result = cone_detector.process(outside, 1016667);
+    cone_result = cone_detector.process(outside, 1033334);
+    check(!cone_result.valid && !cone_detector.last_candidates().empty() &&
+              !cone_detector.last_candidates().front().inside_capture_cone,
+          "out-of-cone candidates are logged but cannot enter control tracking");
+}
+
+void test_immediate_full_cone_reacquire()
+{
+    dart::DetectorConfig config;
+    config.enable_normalized_multiscale = false;
+    config.enable_capture_cone = false;
+    config.gate_min_px = 15.0F;
+    config.gate_max_px = 20.0F;
+    dart::GreenLightDetector detector(config);
+    auto first = green_blob_image(120, 90, 26, 26, 8, 8, 30.0F, 30.0F);
+    detector.process(first, 1000000);
+    detector.process(first, 1016667);
+    auto result = detector.process(first, 1033334);
+    check(result.valid, "initial target is confirmed before reacquisition test");
+
+    maix::image::Image blank(120, 90);
+    blank.set_blobs({}, {});
+    result = detector.process(blank, 1050001);
+    check(result.valid && result.predicted,
+          "one missing frame enters bounded coasting");
+
+    auto second = green_blob_image(120, 90, 86, 56, 8, 8, 90.0F, 60.0F);
+    result = detector.process(second, 1066668);
+    check(!result.valid && result.state == dart::TrackState::Candidate,
+          "far candidate starts a fresh confirmation immediately after loss");
+    detector.process(second, 1083335);
+    result = detector.process(second, 1100002);
+    check(result.valid && std::fabs(result.center_x - 90.0F) < 3.0F,
+          "full-cone reacquisition confirms the relocated target");
+}
+
+void test_rotated_armor_and_planar_pose()
+{
+    dart::DetectorConfig detector_config;
+    detector_config.enable_normalized_multiscale = false;
+    detector_config.enable_capture_cone = false;
+    dart::ArmorConfig armor_config;
+    armor_config.min_green_size_px = 1.0F;
+    armor_config.required_pose_hits = 3;
+
+    auto rotated = armor_target_image(true);
+    dart::GreenLightDetector rotated_detector(detector_config, armor_config);
+    rotated_detector.process_target(rotated, 1000000);
+    rotated_detector.process_target(rotated, 1016667);
+    const auto rotated_target =
+        rotated_detector.process_target(rotated, 1033334);
+    check(rotated_target.armor.valid &&
+              rotated_target.armor.color == dart::ArmorColor::Red,
+          "red armor pair is detected at arbitrary roll");
+    check(std::fabs(rotated_target.armor.left_bar.bottom.x -
+                    rotated_target.armor.left_bar.top.x) > 5.0F &&
+              std::fabs(rotated_target.armor.left_bar.bottom.y -
+                        rotated_target.armor.left_bar.top.y) > 5.0F,
+          "armor pairing does not assume vertical image-space bars");
+    check(rotated_target.guidance_mode == dart::GuidanceMode::Fused &&
+              rotated_target.safe_for_control,
+          "three armor observations begin the bounded fused aim transition");
+
+    dart::TargetGeometryConfig geometry;
+    geometry.pose_enabled = true;
+    geometry.bar_separation_m = 0.12F;
+    geometry.bar_length_m = 0.08F;
+    geometry.green_offset_m = 0.12F;
+    geometry.max_reprojection_error_px = 4.0F;
+    geometry.min_pose_separation_px = 16.0F;
+    detector_config.camera_model.fx = 400.0F;
+    detector_config.camera_model.fy = 400.0F;
+    detector_config.camera_model.principal_x = 80.0F;
+    detector_config.camera_model.principal_y = 60.0F;
+    auto frontal = armor_target_image(false);
+    dart::GreenLightDetector pose_detector(detector_config, armor_config,
+                                           geometry);
+    pose_detector.process_target(frontal, 1000000);
+    pose_detector.process_target(frontal, 1016667);
+    const auto pose_target = pose_detector.process_target(frontal, 1033334);
+    check(pose_target.pose.valid &&
+              pose_target.pose.reprojection_error_px <= 4.0F,
+          "complete separated endpoints produce a valid planar pose");
+    check(std::fabs(pose_target.pose.distance_m - 0.8F) < 0.15F,
+          "fronto-parallel pose recovers the synthetic target distance");
+
+    geometry.min_pose_separation_px = 100.0F;
+    dart::GreenLightDetector degenerate_detector(detector_config, armor_config,
+                                                 geometry);
+    degenerate_detector.process_target(frontal, 1000000);
+    degenerate_detector.process_target(frontal, 1016667);
+    const auto degenerate =
+        degenerate_detector.process_target(frontal, 1033334);
+    check(!degenerate.pose.valid,
+          "insufficient endpoint separation is rejected as a PnP degeneracy");
+}
+
+class FakePoseValidator final : public dart::TargetPoseValidator {
+public:
+    dart::PoseValidation response;
+    int calls = 0;
+    dart::CandidateRoi last_roi;
+
+    dart::PoseValidation validate(maix::image::Image &,
+                                  const dart::CandidateRoi &roi) override
+    {
+        ++calls;
+        last_roi = roi;
+        return response;
+    }
+};
+
+void test_npu_gate_and_control_prediction_budget()
+{
+    dart::DetectorConfig detector_config;
+    detector_config.enable_normalized_multiscale = false;
+    detector_config.enable_capture_cone = false;
+    dart::NpuConfig npu_config;
+    npu_config.enabled = true;
+    npu_config.interval_ms = 33;
+    auto validator = std::make_shared<FakePoseValidator>();
+    validator->response.valid = true;
+    validator->response.confidence = 0.90F;
+    validator->response.keypoints[0] = {60.0F, 45.0F, true};
+    dart::GreenLightDetector detector(detector_config, {}, {}, npu_config,
+                                      validator);
+    auto image = green_blob_image(120, 90, 56, 41, 8, 8, 60.0F, 45.0F);
+    auto target = detector.process_target(image, 1000000);
+    check(target.classical_detection_ran,
+          "NPU scheduler starts with a classical-search frame");
+    target = detector.process_target(image, 1016667);
+    check(!target.classical_detection_ran && target.model_ran,
+          "NPU inference uses the frame between classical searches");
+    detector.process_target(image, 1033334);
+    detector.process_target(image, 1050001);
+    target = detector.process_target(image, 1066668);
+    check(target.safe_for_control && validator->calls >= 2 &&
+              validator->last_roi.width == npu_config.min_roi_size_px,
+          "alternating classical/NPU slots gate a fixed-size candidate ROI");
+
+    validator->response.keypoints[0] = {110.0F, 10.0F, true};
+    target = detector.process_target(image, 1083335);
+    check(target.valid && !target.safe_for_control,
+          "a recent but spatially inconsistent model result cannot validate control");
+
+    dart::GreenLightDetector unavailable_model(
+        detector_config, {}, {}, npu_config, nullptr);
+    unavailable_model.process_target(image, 1000000);
+    unavailable_model.process_target(image, 1016667);
+    unavailable_model.process_target(image, 1033334);
+    unavailable_model.process_target(image, 1050001);
+    target = unavailable_model.process_target(image, 1066668);
+    check(target.valid && !target.safe_for_control,
+          "enabled but unavailable NPU model fails control closed");
+
+    dart::DetectorConfig scheduled_config = detector_config;
+    scheduled_config.classical_interval_frames = 2;
+    dart::GreenLightDetector scheduled_detector(scheduled_config);
+    scheduled_detector.process_target(image, 1000000);
+    scheduled_detector.process_target(image, 1016667);
+    scheduled_detector.process_target(image, 1033334);
+    scheduled_detector.process_target(image, 1050001);
+    target = scheduled_detector.process_target(image, 1066668);
+    check(target.valid && !target.predicted &&
+              target.classical_detection_ran,
+          "30 Hz classical observations confirm a track while output stays 60 Hz");
+    target = scheduled_detector.process_target(image, 1083335);
+    check(target.valid && target.predicted && target.safe_for_control &&
+              !target.classical_detection_ran &&
+              target.green.missed_frames == 0,
+          "intentional scheduler coast is control-safe and does not consume a miss");
+
+    dart::NpuConfig no_npu;
+    dart::GreenLightDetector prediction_detector(detector_config, {}, {}, no_npu);
+    prediction_detector.process_target(image, 1000000);
+    prediction_detector.process_target(image, 1016667);
+    target = prediction_detector.process_target(image, 1033334);
+    check(target.safe_for_control, "observed confirmed target is control-safe");
+    maix::image::Image blank(120, 90);
+    blank.set_blobs({}, {});
+    target = prediction_detector.process_target(blank, 1050001);
+    check(target.predicted && target.safe_for_control,
+          "first prediction remains within the two-frame safety budget");
+    target = prediction_detector.process_target(blank, 1066668);
+    check(target.predicted && target.safe_for_control,
+          "second prediction remains within the 35 ms safety budget");
+    target = prediction_detector.process_target(blank, 1083335);
+    check(target.predicted && target.valid && !target.safe_for_control,
+          "longer prediction is reported but explicitly control-unsafe");
+}
+
+void test_visual_motion_json_and_future_imu_interpolation()
+{
+    dart::VisualMotionConfig motion_config;
+    motion_config.grid_width = 80;
+    motion_config.grid_height = 60;
+    motion_config.max_shift_px = 5;
+    motion_config.min_response = 0.15F;
+    maix::image::Image first(160, 120);
+    maix::image::Image second(160, 120);
+    for (int y = 0; y < 120; ++y) {
+        for (int x = 0; x < 160; ++x) {
+            const uint8_t value = static_cast<uint8_t>(
+                (37 * x + 17 * y + 3 * x * y) & 0xff);
+            first.set_pixel(x, y, value, value, value);
+            second.set_pixel(x + 8, y + 4, value, value, value);
+        }
+    }
+    dart::VisualMotionEstimator estimator(motion_config);
+    const auto initial = estimator.update(first, 1000000);
+    const auto shifted = estimator.update(second, 1016667);
+    check(!initial.valid && shifted.valid &&
+              std::fabs(shifted.image_dx_px - 8.0F) < 2.5F &&
+              std::fabs(shifted.image_dy_px - 4.0F) < 2.5F,
+          "sparse optical flow plus RANSAC estimates global image motion");
+
+    dart::MotionPrior before;
+    before.valid = true;
+    before.timestamp_us = 1000000;
+    before.orientation_wxyz = {1.0F, 0.0F, 0.0F, 0.0F};
+    before.angular_velocity_rad_s = {0.0F, 0.0F, 0.0F};
+    before.confidence = 0.8F;
+    dart::MotionPrior after = before;
+    after.timestamp_us = 1020000;
+    after.orientation_wxyz = {0.0F, 0.0F, 0.0F, 1.0F};
+    after.angular_velocity_rad_s = {0.0F, 0.0F, 2.0F};
+    const auto interpolated =
+        dart::interpolate_motion_prior(before, after, 1010000);
+    check(interpolated.valid &&
+              std::fabs(interpolated.orientation_wxyz[0] - 0.7071F) < 0.01F &&
+              std::fabs(interpolated.angular_velocity_rad_s[2] - 1.0F) < 0.01F,
+          "future IMU prior supports timestamp interpolation");
+
+    dart::TargetEstimate target;
+    target.timestamp_us = 123456;
+    target.green.timestamp_us = 123456;
+    target.green.center_x = 12.5F;
+    target.green.center_y = 9.5F;
+    const std::string json = dart::target_estimate_json(target);
+    check(json.find("\"schema_version\":2") != std::string::npos &&
+              json.find("\"green\":{") != std::string::npos &&
+              json.find("\"center_x\":12.500000") != std::string::npos &&
+              json.find("\"safe_for_control\":false") != std::string::npos,
+          "schema v2 JSON retains nested and legacy flat green fields");
+}
+
 void test_configuration()
 {
     const auto project_config =
         std::filesystem::path(TEST_PROJECT_ROOT) / "config" / "green_detector.conf";
     const auto config = dart::load_application_config(project_config.string());
-    check(config.camera.width == 1280 && config.camera.height == 720,
+    check(config.camera.width == 480 && config.camera.height == 360 &&
+              config.camera.fps == 60 && config.camera.exposure_us == 500,
           "sample configuration parses");
     check(std::fabs(config.detector.min_association_score - 0.05F) < 1.0e-6F,
           "association setting parses");
@@ -338,9 +791,41 @@ void test_configuration()
               !config.detector.merge_blobs,
           "saturated core and non-merging settings parse");
     check(std::fabs(config.detector.min_core_size_px - 3.0F) < 1.0e-6F &&
-              std::fabs(config.detector.weight_center_prior - 0.25F) < 1.0e-6F &&
-              std::fabs(config.detector.gate_max_px - 100.0F) < 1.0e-6F,
-          "core size and center-prior settings parse");
+              config.detector.weight_center_prior == 0.0F &&
+              std::fabs(config.detector.gate_max_px - 45.0F) < 1.0e-6F,
+          "core size and center-neutral tracking settings parse");
+    check(std::fabs(config.detector.min_tracking_local_contrast + 0.08F) <
+                  1.0e-6F &&
+              std::fabs(config.detector.contrast_relax_min_association - 0.75F) <
+                  1.0e-6F &&
+              config.detector.prediction_max_age_ms == 110,
+          "tracking-only recovery settings parse");
+    check(config.detector.enable_normalized_multiscale &&
+              !config.detector.enable_legacy_lab_candidates &&
+              config.detector.enable_sparse_component_search &&
+              config.detector.multiscale_downsample == 1 &&
+              config.detector.multiscale_diameters_px[2] == 6 &&
+              std::fabs(config.detector.capture_cone_deg - 6.5F) < 1.0e-6F &&
+              config.detector.control_prediction_max_frames == 2 &&
+              config.detector.classical_interval_frames == 2 &&
+              config.detector.multiscale_min_scan_step_px == 2 &&
+              config.detector.multiscale_tracking_min_scan_step_px == 1 &&
+              config.detector.multiscale_capture_cone_only &&
+              std::fabs(config.detector.multiscale_tracking_roi_radius_px -
+                        72.0F) < 1.0e-6F &&
+              config.detector.multiscale_full_refresh_interval == 30,
+          "v0.2 multi-scale, scheduler and fail-safe settings parse");
+    check(config.armor.expected_color == dart::ArmorColor::Red &&
+              !config.target_geometry.pose_enabled &&
+              !config.npu.enabled && config.npu.input_size == 256 &&
+              config.visual_motion.enabled &&
+              config.visual_motion.tracking_only &&
+              config.visual_motion.interval_frames == 2 &&
+              config.visual_motion.grid_width == 48 &&
+              config.visual_motion.grid_height == 36 &&
+              config.debug.json_log_every_n_frames == 6 &&
+              !config.debug.log_candidates,
+          "armor, pose, NPU, motion and low-overhead log settings parse");
 
     const auto invalid_path =
         std::filesystem::temp_directory_path() / "dart_green_detector_invalid.conf";
@@ -364,6 +849,7 @@ int main()
 {
     test_confirmation_and_loss();
     test_sparse_three_of_five_confirmation();
+    test_prediction_timeout_and_recovery();
     test_growing_size_tracker();
     test_confirmation_requires_same_candidate();
     test_hard_association_gate();
@@ -371,7 +857,13 @@ int main()
     test_single_pixel_and_reflection();
     test_large_growth_and_partial_frame();
     test_short_occlusion_and_multiple_candidates();
+    test_tracking_only_contrast_relaxation();
     test_saturated_core_with_green_ring();
+    test_normalized_multiscale_and_capture_cone();
+    test_immediate_full_cone_reacquire();
+    test_rotated_armor_and_planar_pose();
+    test_npu_gate_and_control_prediction_budget();
+    test_visual_motion_json_and_future_imu_interpolation();
     test_configuration();
 
     if (failures != 0) {

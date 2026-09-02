@@ -1,9 +1,11 @@
 # MaixCDK/CMake build trees and release artifacts
 /build/
 /build-*/
+/tools/video_replay/build/
 /cmake-build-*/
 /out/
 /dist/
+/reports/generated/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
@@ -37,9 +39,23 @@ CMakeUserPresets.json
 /recordings/**/*.jpeg
 /recordings/**/*.png
 /recordings/**/trials/
+/recordings/**/results*/
+/recordings/**/TEST_REPORT*.md
+
+# Private/large training data and model artifacts. Keep contracts/templates.
+/datasets/
+/models/runtime/*
+!/models/runtime/.gitkeep
+*.pt
+*.onnx
+*.axmodel
+*.tar
 
 # Runtime/debug output
 *.log
+*.err
+/reports/*.json
+/reports/*.jsonl
 *.pid
 *.tmp
 *.bak

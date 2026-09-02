@@ -1,4 +1,6 @@
 #include "dart/green_detector.hpp"
+#include "dart/target_json.hpp"
+#include "dart/visual_motion.hpp"
 
 #include "maix_image.hpp"
 
@@ -26,6 +28,7 @@ struct CommandLine {
     std::string jsonl_path;
     std::string config_path = "config/green_detector.conf";
     std::uint64_t max_frames = 0;
+    bool native_resolution = false;
 };
 
 CommandLine parse_command_line(int argc, char **argv)
@@ -55,11 +58,13 @@ CommandLine parse_command_line(int argc, char **argv)
             if (consumed != value.size()) {
                 throw std::runtime_error("--max-frames requires an integer");
             }
+        } else if (argument == "--native-resolution") {
+            result.native_resolution = true;
         } else if (argument == "--help" || argument == "-h") {
             std::cout
                 << "Usage: dart_video_replay --input INPUT.mp4 --output OUTPUT.mp4 "
                    "[--jsonl OUTPUT.jsonl] [--config green_detector.conf] "
-                   "[--max-frames N]\n";
+                   "[--max-frames N] [--native-resolution]\n";
             std::exit(0);
         } else {
             throw std::runtime_error("unknown argument: " + argument);
@@ -116,7 +121,7 @@ void draw_cross(cv::Mat &frame,
 }
 
 void draw_overlay(cv::Mat &frame,
-                  const dart::GreenLightDetection &detection,
+                  const dart::TargetEstimate &target,
                   const std::vector<dart::GreenLightCandidateDebug> &candidates,
                   std::uint64_t frame_index,
                   std::uint64_t total_frames,
@@ -124,6 +129,7 @@ void draw_overlay(cv::Mat &frame,
                   double average_detector_fps,
                   double processing_ms)
 {
+    const auto &detection = target.green;
     const double size_scale = std::max(0.75, frame.rows / 720.0);
     const int line_thickness = std::max(1, static_cast<int>(std::lround(size_scale)));
     const int box_thickness = std::max(2, static_cast<int>(std::lround(2.0 * size_scale)));
@@ -143,7 +149,9 @@ void draw_overlay(cv::Mat &frame,
                       cv::LINE_AA);
     }
 
-    const cv::Scalar color = state_color(detection.state);
+    const cv::Scalar color = detection.predicted
+                                 ? cv::Scalar(0, 165, 255)
+                                 : state_color(detection.state);
     if (detection.valid) {
         cv::rectangle(frame,
                       {detection.bbox_x,
@@ -162,7 +170,9 @@ void draw_overlay(cv::Mat &frame,
                    box_thickness);
 
         std::ostringstream target_label;
-        target_label << dart::track_state_name(detection.state)
+        target_label << (detection.predicted
+                             ? "PREDICTED"
+                             : dart::track_state_name(detection.state))
                      << " conf=" << std::fixed << std::setprecision(2)
                      << detection.confidence;
         const int label_y = std::max(24, detection.bbox_y - 8);
@@ -176,6 +186,34 @@ void draw_overlay(cv::Mat &frame,
                     cv::LINE_AA);
     }
 
+    if (target.armor.valid) {
+        const cv::Scalar armor_color = target.armor.color == dart::ArmorColor::Blue
+                                           ? cv::Scalar(255, 120, 0)
+                                           : cv::Scalar(0, 80, 255);
+        const auto draw_bar = [&](const dart::LineSegment2f &bar) {
+            cv::line(frame,
+                     {static_cast<int>(std::lround(bar.top.x)),
+                      static_cast<int>(std::lround(bar.top.y))},
+                     {static_cast<int>(std::lround(bar.bottom.x)),
+                      static_cast<int>(std::lround(bar.bottom.y))},
+                     armor_color, box_thickness, cv::LINE_AA);
+        };
+        draw_bar(target.armor.left_bar);
+        draw_bar(target.armor.right_bar);
+        draw_cross(frame,
+                   {static_cast<int>(std::lround(target.armor.center.x)),
+                    static_cast<int>(std::lround(target.armor.center.y))},
+                   armor_color, 7, box_thickness);
+    }
+    if (target.aim_point.valid) {
+        draw_cross(frame,
+                   {static_cast<int>(std::lround(target.aim_point.x)),
+                    static_cast<int>(std::lround(target.aim_point.y))},
+                   target.safe_for_control ? cv::Scalar(255, 255, 255)
+                                           : cv::Scalar(80, 80, 255),
+                   11, box_thickness);
+    }
+
     std::vector<std::string> lines;
     {
         std::ostringstream stream;
@@ -184,6 +222,11 @@ void draw_overlay(cv::Mat &frame,
             stream << '/' << total_frames;
         }
         stream << "  State: " << dart::track_state_name(detection.state)
+               << (detection.predicted ? " (predicted)" : "")
+               << "  Guidance: "
+               << dart::guidance_track_state_name(target.state)
+               << '/' << dart::guidance_mode_name(target.guidance_mode)
+               << "  Safe: " << (target.safe_for_control ? "YES" : "NO")
                << "  Candidates: " << candidates.size();
         lines.push_back(stream.str());
     }
@@ -241,61 +284,21 @@ void draw_overlay(cv::Mat &frame,
 
 void write_json_line(std::ostream &output,
                      std::uint64_t frame_index,
-                     const dart::GreenLightDetection &detection,
+                     const dart::TargetEstimate &target,
                      const std::vector<dart::GreenLightCandidateDebug> &candidates,
                      double processing_ms,
                      double detector_fps,
                      double average_detector_fps)
 {
-    output << std::fixed << std::setprecision(6)
-           << "{\"frame\":" << frame_index
-           << ",\"timestamp_us\":" << detection.timestamp_us
-           << ",\"valid\":" << (detection.valid ? "true" : "false")
-           << ",\"state\":\"" << dart::track_state_name(detection.state) << '"'
-           << ",\"center_x\":" << detection.center_x
-           << ",\"center_y\":" << detection.center_y
-           << ",\"bbox_x\":" << detection.bbox_x
-           << ",\"bbox_y\":" << detection.bbox_y
-           << ",\"bbox_w\":" << detection.bbox_w
-           << ",\"bbox_h\":" << detection.bbox_h
-           << ",\"apparent_size\":" << detection.apparent_size
-           << ",\"yaw_rad\":" << detection.yaw_rad
-           << ",\"pitch_rad\":" << detection.pitch_rad
-           << ",\"confidence\":" << detection.confidence
-           << ",\"candidate_count\":" << candidates.size()
-           << ",\"processing_ms\":" << processing_ms
-           << ",\"detector_fps\":" << detector_fps
-           << ",\"average_detector_fps\":" << average_detector_fps
-           << ",\"candidates\":[";
-    for (std::size_t index = 0; index < candidates.size(); ++index) {
-        if (index > 0) {
-            output << ',';
-        }
-        const auto &candidate = candidates[index];
-        output << "{\"center_x\":" << candidate.center_x
-               << ",\"center_y\":" << candidate.center_y
-               << ",\"bbox_x\":" << candidate.bbox_x
-               << ",\"bbox_y\":" << candidate.bbox_y
-               << ",\"bbox_w\":" << candidate.bbox_w
-               << ",\"bbox_h\":" << candidate.bbox_h
-               << ",\"apparent_size\":" << candidate.apparent_size
-               << ",\"density\":" << candidate.density
-               << ",\"green_dominance\":" << candidate.green_dominance
-               << ",\"green_fraction\":" << candidate.green_fraction
-               << ",\"local_contrast\":" << candidate.local_contrast
-               << ",\"shape_score\":" << candidate.shape_score
-               << ",\"core_score\":" << candidate.core_score
-               << ",\"temporal_score\":" << candidate.temporal_score
-               << ",\"center_prior_score\":"
-               << candidate.center_prior_score
-               << ",\"initial_size_score\":" << candidate.initial_size_score
-               << ",\"score\":" << candidate.score
-               << ",\"saturated_core\":"
-               << (candidate.saturated_core ? "true" : "false")
-               << ",\"selected\":"
-               << (candidate.selected ? "true" : "false") << '}';
-    }
-    output << "]}\n";
+    std::ostringstream extra;
+    extra << std::fixed << std::setprecision(6)
+          << ",\"frame\":" << frame_index
+          << ",\"processing_ms\":" << processing_ms
+          << ",\"detector_fps\":" << detector_fps
+          << ",\"average_detector_fps\":" << average_detector_fps;
+    dart::write_target_estimate_json(output, target, &candidates,
+                                     extra.str());
+    output << '\n';
 }
 
 int run(int argc, char **argv)
@@ -309,9 +312,9 @@ int run(int argc, char **argv)
         throw std::runtime_error("cannot open input video: " +
                                  command_line.input_path);
     }
-    const int width = static_cast<int>(
+    const int source_width = static_cast<int>(
         std::lround(capture.get(cv::CAP_PROP_FRAME_WIDTH)));
-    const int height = static_cast<int>(
+    const int source_height = static_cast<int>(
         std::lround(capture.get(cv::CAP_PROP_FRAME_HEIGHT)));
     double source_fps = capture.get(cv::CAP_PROP_FPS);
     if (!std::isfinite(source_fps) || source_fps <= 0.0) {
@@ -320,9 +323,22 @@ int run(int argc, char **argv)
     const std::uint64_t total_frames = static_cast<std::uint64_t>(
         std::max(0.0, capture.get(cv::CAP_PROP_FRAME_COUNT)));
 
-    if (config.camera.width > 0 && config.camera.height > 0) {
-        const float scale_x = static_cast<float>(width) / config.camera.width;
-        const float scale_y = static_cast<float>(height) / config.camera.height;
+    const int width = command_line.native_resolution
+                          ? source_width
+                          : config.camera.width;
+    const int height = command_line.native_resolution
+                           ? source_height
+                           : config.camera.height;
+    if (width <= 0 || height <= 0) {
+        throw std::runtime_error("configured processing resolution is invalid");
+    }
+
+    if (command_line.native_resolution && config.camera.width > 0 &&
+        config.camera.height > 0) {
+        const float scale_x = static_cast<float>(source_width) /
+                              config.camera.width;
+        const float scale_y = static_cast<float>(source_height) /
+                              config.camera.height;
         const float spatial_scale = std::sqrt(scale_x * scale_y);
         const float variance_scale = spatial_scale * spatial_scale;
         config.detector.camera_model.fx *= scale_x;
@@ -361,20 +377,37 @@ int run(int argc, char **argv)
                                  command_line.jsonl_path);
     }
 
-    dart::GreenLightDetector detector(config.detector);
+    dart::GreenLightDetector detector(config.detector,
+                                      config.armor,
+                                      config.target_geometry,
+                                      config.npu,
+                                      nullptr);
+    dart::VisualMotionEstimator visual_motion(config.visual_motion);
     std::uint64_t frame_index = 0;
     std::uint64_t valid_frames = 0;
+    std::uint64_t observed_frames = 0;
+    std::uint64_t predicted_frames = 0;
+    std::uint64_t safe_frames = 0;
+    std::uint64_t armor_frames = 0;
     std::uint64_t candidate_frames = 0;
     std::uint64_t tracking_frames = 0;
     std::uint64_t lost_frames = 0;
     double total_processing_seconds = 0.0;
     double detector_fps_ema = 0.0;
+    dart::TrackState previous_state = dart::TrackState::Lost;
 
-    cv::Mat bgr;
-    while (capture.read(bgr)) {
+    cv::Mat source_bgr;
+    while (capture.read(source_bgr)) {
         if (command_line.max_frames > 0 &&
             frame_index >= command_line.max_frames) {
             break;
+        }
+        cv::Mat bgr;
+        if (source_bgr.cols == width && source_bgr.rows == height) {
+            bgr = source_bgr.clone();
+        } else {
+            cv::resize(source_bgr, bgr, {width, height}, 0.0, 0.0,
+                       cv::INTER_AREA);
         }
         cv::Mat rgb;
         cv::cvtColor(bgr, rgb, cv::COLOR_BGR2RGB);
@@ -383,8 +416,22 @@ int run(int argc, char **argv)
             std::llround(frame_index * 1000000.0 / source_fps));
 
         const auto started = std::chrono::steady_clock::now();
-        const dart::GreenLightDetection detection =
-            detector.process(frame, timestamp_us);
+        dart::MotionPrior motion_prior;
+        const bool visual_motion_allowed =
+            !config.visual_motion.tracking_only ||
+            previous_state == dart::TrackState::Tracking;
+        if (config.visual_motion.tracking_only && !visual_motion_allowed) {
+            visual_motion.reset();
+        }
+        if (config.visual_motion.enabled &&
+            visual_motion_allowed &&
+            frame_index % static_cast<std::uint64_t>(
+                config.visual_motion.interval_frames) == 0) {
+            motion_prior = visual_motion.update(frame, timestamp_us);
+        }
+        const dart::TargetEstimate target = detector.process(
+            frame, timestamp_us, motion_prior.valid ? &motion_prior : nullptr);
+        const auto &detection = target.green;
         const auto finished = std::chrono::steady_clock::now();
         const double processing_seconds =
             std::chrono::duration<double>(finished - started).count();
@@ -403,6 +450,17 @@ int run(int argc, char **argv)
 
         if (detection.valid) {
             ++valid_frames;
+            if (detection.predicted) {
+                ++predicted_frames;
+            } else {
+                ++observed_frames;
+            }
+        }
+        if (target.safe_for_control) {
+            ++safe_frames;
+        }
+        if (target.armor.valid) {
+            ++armor_frames;
         }
         switch (detection.state) {
         case dart::TrackState::Candidate:
@@ -415,10 +473,11 @@ int run(int argc, char **argv)
             ++lost_frames;
             break;
         }
+        previous_state = detection.state;
 
         const auto &candidates = detector.last_candidates();
         draw_overlay(bgr,
-                     detection,
+                     target,
                      candidates,
                      frame_index,
                      total_frames,
@@ -428,7 +487,7 @@ int run(int argc, char **argv)
         writer.write(bgr);
         write_json_line(jsonl,
                         frame_index,
-                        detection,
+                        target,
                         candidates,
                         processing_ms,
                         detector_fps_ema,
@@ -446,11 +505,19 @@ int run(int argc, char **argv)
               << "{\"input\":\"" << command_line.input_path
               << "\",\"output\":\"" << command_line.output_path
               << "\",\"jsonl\":\"" << command_line.jsonl_path
-              << "\",\"width\":" << width
-              << ",\"height\":" << height
+              << "\",\"source_width\":" << source_width
+              << ",\"source_height\":" << source_height
+              << ",\"processing_width\":" << width
+              << ",\"processing_height\":" << height
+              << ",\"native_resolution\":"
+              << (command_line.native_resolution ? "true" : "false")
               << ",\"source_fps\":" << source_fps
               << ",\"frames\":" << frame_index
               << ",\"valid_frames\":" << valid_frames
+              << ",\"observed_frames\":" << observed_frames
+              << ",\"predicted_frames\":" << predicted_frames
+              << ",\"safe_frames\":" << safe_frames
+              << ",\"armor_frames\":" << armor_frames
               << ",\"candidate_frames\":" << candidate_frames
               << ",\"tracking_frames\":" << tracking_frames
               << ",\"lost_frames\":" << lost_frames
@@ -458,6 +525,10 @@ int run(int argc, char **argv)
               << static_cast<double>(valid_frames) / frame_index
               << ",\"tracking_rate\":"
               << static_cast<double>(tracking_frames) / frame_index
+              << ",\"safe_rate\":"
+              << static_cast<double>(safe_frames) / frame_index
+              << ",\"armor_rate\":"
+              << static_cast<double>(armor_frames) / frame_index
               << ",\"average_detector_fps\":" << average_detector_fps
               << "}\n";
     return 0;

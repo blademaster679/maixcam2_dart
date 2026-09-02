@@ -1,0 +1,8 @@
+# Portable project defaults. Copy to .clangd after generating build/compile_commands.json.
+CompileFlags:
+  CompilationDatabase: build
+  Add:
+    - -std=c++17
+
+Index:
+  Background: Build
