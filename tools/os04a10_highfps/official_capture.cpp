@@ -1,5 +1,8 @@
 // Independent RAW benchmark: no display, encoding or downstream application.
 #include "ax_middleware.hpp"
+#ifdef DART_BUSINESS_CAPTURE
+#include "dart/async_log.hpp"
+#endif
 // Runtime settings for the exact official driver; no synthesized register table.
 #define OS04A10_HFR_AVAILABLE 1
 #define OS04A10_KEEP_RECEIVER 1
@@ -178,7 +181,8 @@ int main(int argc, char **argv) {
 #ifdef DART_BUSINESS_CAPTURE
     records.reserve(3); // first/last only: do not accumulate 30 minutes of metadata
     uint64_t business_frames=0;
-    std::ofstream business_csv("frames.csv");
+    dart::AsyncLog business_csv("frames.csv");
+    dart::AsyncLog business_progress("progress.jsonl",64*1024);
     business_csv << "sequence,pts_raw,monotonic_us,width,height,stride,frame_bytes,format,get_us,hold_us,loop_gap_us,cpu\n";
 #else
     records.reserve(static_cast<size_t>(seconds + 1) * 400);
@@ -350,7 +354,7 @@ int main(int argc, char **argv) {
                                 f.u32PicStride[0], f.u32FrameSize, static_cast<int>(f.enImgFormat)};
             record.get_us=stamp-get_start;record.loop_gap_us=previous_release ? get_start-previous_release : 0;
             record.cpu=sched_getcpu();
-            // One diagnostic image during warmup; no storage I/O in measurement.
+            // One diagnostic image during warmup; business measurement logs use bounded asynchronous I/O.
             if (sample_raw && !sampled && stamp >= start + 1000000 && stamp < measurement_start) {
                 if (f.u32FrameSize && f.u32FrameSize <= 16*1024*1024) {
                     void *pixels = AX_SYS_Mmap(f.u64PhyAddr[0], f.u32FrameSize);
@@ -423,7 +427,11 @@ int main(int argc, char **argv) {
                     // Datasheet operating junction ceiling is 85 C; stop with 5 C headroom.
                     if (state.temperature>=80 || state.mipi_errors>0) { rc=9; break; }
                     if (health_records.size()%10==0) {
+                        #ifdef DART_BUSINESS_CAPTURE
+                        auto &progress=business_progress;
+#else
                         std::ofstream progress("progress.json");
+#endif
                         progress << "{\"elapsed_s\":" << state.elapsed_us/1e6
                             << ",\"frames\":"
 #ifdef DART_BUSINESS_CAPTURE
@@ -433,6 +441,10 @@ int main(int argc, char **argv) {
 #endif
                             << ",\"temperature_c\":" << state.temperature
                             << ",\"mipi_errors\":" << state.mipi_errors << ",\"rss_kb\":" << state.rss_kb << "}\n";
+#ifdef DART_BUSINESS_CAPTURE
+                        progress.flush(); // enqueue only; never wait for storage
+                        if(!progress) {rc=11;break;}
+#endif
                     }
                 }
             }
@@ -461,7 +473,7 @@ int main(int argc, char **argv) {
             if(!video || burst_frames!=records.size()) rc=11;
         }
 #ifdef DART_BUSINESS_CAPTURE
-        business_csv.flush(); if(!business_csv) rc=11;
+        if(!business_csv.finish() || !business_progress.finish()) rc=11;
         const uint64_t total_frames=business_frames;
 #else
         const uint64_t total_frames=records.size();

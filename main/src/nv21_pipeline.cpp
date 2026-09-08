@@ -1,4 +1,5 @@
 #include "dart/nv21_pipeline.hpp"
+#include "dart/async_log.hpp"
 #include "dart/target_json.hpp"
 #include "dart/visual_motion.hpp"
 #include <algorithm>
@@ -127,7 +128,7 @@ void HighFpsPipeline::vision_loop() {
         std::vector<Point2f> proposals;
         TargetEstimate last;
         size_t cursor=0;
-        std::ofstream log("vision.csv");
+        AsyncLog log("vision.csv");
         log<<"sequence,pts_raw,received_us,started_us,finished_us,search_ran,green_ran,armor_ran,motion_ran,search_us,roi_convert_us,detect_us,motion_us,direct_green,green_us\n";
         while(auto f=frames_.wait()) {
             if(stopped_) break;
@@ -181,13 +182,13 @@ void HighFpsPipeline::vision_loop() {
             log<<f->metadata.sequence<<','<<f->metadata.pts_raw<<','<<f->metadata.received_us<<','<<started<<','<<finished<<','<<full<<",1,"<<armor_ran<<','<<motion_ran<<','<<search_end-search_start<<','<<convert_end-convert_start<<','<<finished-detect_start<<','<<motion_end-motion_start<<','<<(last.green.valid&&!last.green.predicted)<<','<<last.classical_detection_ms*1000<<'\n';
             if(!log) throw std::runtime_error("vision metrics write failed");
         }
-        log.flush(); if(!log) throw std::runtime_error("vision metrics flush failed");
+        log.finish(); if(!log) throw std::runtime_error("vision metrics flush failed");
     } catch(const std::exception &e) { std::cerr<<"vision: "<<e.what()<<'\n';failed_=true;stopped_=true;frames_.close(); }
 }
 void HighFpsPipeline::motion_loop() {
     try {
         VisualMotionEstimator estimator(config_.visual_motion);
-        std::ofstream log("motion.csv");log<<"timestamp_us,started_us,finished_us,valid\n";
+        AsyncLog log("motion.csv",256*1024);log<<"timestamp_us,started_us,finished_us,valid\n";
         uint64_t previous=0;
         while(auto job=motion_frames_.wait()) {
             if(stopped_) break;
@@ -200,12 +201,12 @@ void HighFpsPipeline::motion_loop() {
             log<<job->timestamp<<','<<start<<','<<monotonic_us()<<','<<prior->valid<<'\n';
             if(!log) throw std::runtime_error("motion metrics write failed");
         }
-        log.flush();if(!log) throw std::runtime_error("motion metrics flush failed");
+        log.finish();if(!log) throw std::runtime_error("motion metrics flush failed");
     } catch(const std::exception &e) {std::cerr<<"motion: "<<e.what()<<'\n';failed_=true;stopped_=true;frames_.close();}
 }
 void HighFpsPipeline::control_loop() {
     try {
-        std::ofstream log("targets.jsonl");
+        AsyncLog log("targets.jsonl",8*1024*1024);
         std::shared_ptr<Snapshot> latest;
         const auto origin=std::chrono::steady_clock::now(); uint64_t tick=0;
         while(!stopped_) {
@@ -241,7 +242,7 @@ void HighFpsPipeline::control_loop() {
             tick=std::max(tick+1,static_cast<uint64_t>(elapsed)*180/1000000+1);
             std::this_thread::sleep_until(origin+std::chrono::microseconds((tick*1000000+179)/180));
         }
-        log.flush(); if(!log) throw std::runtime_error("control metrics flush failed");
+        log.finish(); if(!log) throw std::runtime_error("control metrics flush failed");
     } catch(const std::exception&e){std::cerr<<"control: "<<e.what()<<'\n';failed_=true;stopped_=true;frames_.close();}
 }
 } // namespace dart

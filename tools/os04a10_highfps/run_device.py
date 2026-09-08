@@ -232,7 +232,7 @@ def main():
         if before != after:
             raise RuntimeError('Original system driver or MSP changed during experiment')
     artifact_names = ['motion.csv','camera_settings.json','vision.csv','targets.jsonl','leases.json','business.json','capture.json', 'frames.csv', 'loaded_maps.txt', 'sample.raw', 'sample.json',
-                      'registers_before.csv', 'registers_after.csv', 'health.csv', 'progress.json', 'sample.nv21',
+                      'registers_before.csv', 'registers_after.csv', 'health.csv', 'progress.json', 'progress.jsonl', 'frames.csv.io.json', 'progress.jsonl.io.json', 'targets.jsonl.io.json', 'vision.csv.io.json', 'motion.csv.io.json', 'sample.nv21',
                       'capture.stdout.log','capture.stderr.log','process_exit_code',
                       'record.h264','encoded_frames.csv','api_checks.csv','ivps_config.csv','sample.nv12','record.nv21',
                       'scheduler.txt','venc_config.json','venc_send.csv','itp_depth.json']
