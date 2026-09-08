@@ -126,6 +126,14 @@ NPU和Pose必须关闭。PTS保留SDK原值，曝光阶段与跨时钟偏移未�
 软件年龄和未验证的曝光端到端延迟。逐帧日志使用固定容量异步字节缓冲；溢出或写盘失败即报错，`*.io.json`记录写入延迟和缓冲高水位。180Hz指TargetEstimate生成频率，UART/CAN尚未接通。阶段频率、失败对照、验收边界与当前结论见
 [180fps业务验证报告](reports/BUSINESS_FULL180_2026-09-08.md)。公共Camera/IVPS路径仍需另行验收。
 
+### 更高检测频率实验档
+
+阶段频率现可用`highfps.*_hz`配置；原full180仍默认90/60Hz。
+新增`green_detector_full180_fast.conf`请求120/90Hz，`green_detector_full180_max.conf`
+请求180/120Hz。当前场景两分钟高档实测176.14/119.33Hz，输入仍约180fps且无测量缺号，软件源年龄P95为12.26ms。
+这些是检测调用频率，实验档尚未替代30分钟验证基线；详见
+[调度提频报告](reports/PERFORMANCE_FULL180_RATES_2026-09-08.md)。
+
 ## 每次打开 WSL2 终端
 
 以下环境设置只对当前终端有效，因此新终端都要执行：

@@ -1,0 +1,32 @@
+{
+  "source_commit": "0a6ee3c",
+  "build_directory": ".maixpy/business-full180-rates",
+  "sdk_commit": "2a0502ecb20e5695b28580b3689492b7a228f9e4",
+  "binary_sha256": "157a0cdb55a7f3610bb1aac689934212fb9a547ef05270e23badb466f7f3712d",
+  "sensor_sha256": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273",
+  "middleware_sha256": "8856acbc57d23e1e41bfb708d1d1e1f33dc97f859421fa873e762c5cf5d0351a",
+  "sources": {
+    "tools/os04a10_highfps/business_capture.cpp": "b1a5e83fc9ff9c10cd2638d862b763134f452885d25a9b020956bfb598b62603",
+    "main/src/config.cpp": "d2e8044267043307490f44a9d7084b68bd72110e340e8cfb788e9d264f01053a",
+    "main/src/green_detector.cpp": "c11e44379d16c2fec00b63c0e374a4cbc1cd4ccfc0cb176f012f68cf210130f7",
+    "main/src/green_detector_core.cpp": "d7e786177fd7d24ac6995c9d3776a812622c5558364ab710a590803856948357",
+    "main/src/target_fusion.cpp": "c701bad136b282b0c8b624260f80322a86c46428d35e0fadded5981bfb6200d5",
+    "main/src/target_json.cpp": "4e7383a6f54be97b892eb51682ad76b2f52664f559daad6bb0c4ba4c45a461a2",
+    "main/src/visual_motion.cpp": "c39046850aefede8cda03b1ce61c7139f96a509019e92d85c7e4e621883053a9",
+    "main/src/nv21_pipeline.cpp": "7ea9ab17501832a19f08618eb1c2d0672778b593b7a146292e1d238868d83446",
+    "tools/os04a10_highfps/official_capture.cpp": "9ece072e55118e2f8b65412d34af1e3817330041a7b26d527100b73683e43fe7",
+    "tools/os04a10_highfps/vin_nv21_frame.hpp": "592d12bd40ea993a22e653ffc5315fcd0d27fe302825580581b5fd7fe632272f",
+    "tools/os04a10_highfps/vin_camera_settings.hpp": "feebf777382c6176cb1efdff74d2cd5c147a64f655b4f8c4b9c869ea17dc8ebe",
+    "main/include/dart/target_json.hpp": "9f0a7181ff93bbd5d04fe7ec169650c9af2a42f7e2eebaa9cc79042a11527e1d",
+    "main/include/dart/async_frame.hpp": "9efd50557da62584ad02acd9de63ef7dd6b2297f21de6e07ff35691ad4e69991",
+    "main/include/dart/async_log.hpp": "af9e0b2ae58e90177d77d25e85e8ac34c860b636644b18f169108d627b02e6a0",
+    "main/include/dart/visual_motion.hpp": "fda5d822271c2386b47a7645b48b3ff9da458cde7985c5556cb5e43a1226974a",
+    "main/include/dart/nv21_pipeline.hpp": "7c400c950303719ae7816309f9e093c1453ebf836f7ddd28dac238e3fb5c90e1",
+    "main/include/dart/green_detector.hpp": "b301579ea64c5dbb42a236263d52c7c83e8b6fa6ae1dec20ddd03d3daa5ab1dc"
+  },
+  "config_sha256": {
+    "green_detector_full180.conf": "9ce5186220bff161c7c404cf239e60f9496cfe14a5488acc7e1184e0cd510555",
+    "green_detector_full180_fast.conf": "1eab5224f46681901d94df72581c83efde734460649735596bd8f23f3f3f3ee0",
+    "green_detector_full180_max.conf": "3e211cc0216efeb1cc953b96d652d7a5c4371c5a5dd1b823401f73cc3953b3c6"
+  }
+}

@@ -111,3 +111,8 @@ python3 -B tools/os04a10_highfps/analyze.py .maixpy/runs/<run-directory>
 未标定时角度/PnP/控制安全位无效，NPU/Pose关闭。退出恢复启动器，原始相机模式用
 基线5秒复验，不覆盖系统库、不改自启动。版本、失败记录和验收范围见
 [180fps业务报告](../../reports/BUSINESS_FULL180_2026-09-08.md)。
+
+业务阶段频率现支持`highfps.green_hz/armor_hz/search_hz/motion_hz`，默认90/60/30/30。
+`green_detector_full180_fast.conf`和`green_detector_full180_max.conf`分别请求120/90和180/120Hz，
+传感器均保持full180。更换`--business-config`选择实验档；实际调用频率和请求频率分别记录，
+短测结果不能继承旧档的30分钟结论。见[调度提频报告](../../reports/PERFORMANCE_FULL180_RATES_2026-09-08.md)。
