@@ -897,6 +897,37 @@ void test_nv21_and_source_roi()
     check(c.camera.width==1344 && c.camera.height==760 && c.camera.fps==180 && !c.npu.enabled && !c.target_geometry.pose_enabled,"independent full180 config");
 }
 
+void test_full180_fused_prediction()
+{
+    auto c=dart::load_application_config(std::string(TEST_PROJECT_ROOT)+"/config/green_detector_full180.conf");
+    dart::detail::TemporalTracker tracker(c.detector);
+    dart::detail::CandidateObservation lamp;lamp.center_x=672;lamp.center_y=380;lamp.apparent_size=12;lamp.score=.95;
+    dart::TargetEstimate source;
+    for(int n=0;n<10;++n) {
+        source.source_received_us=1000000+n*11112;
+        source.green=tracker.update(&lamp,source.source_received_us,c.detector.camera_model);
+    }
+    check(source.green.valid,"confirmed lamp for fused prediction test");
+    source.armor.valid=true;source.armor_source_received_us=source.source_received_us;
+    source.state=dart::GuidanceTrackState::Tracking;
+    source.aim_point={source.green.center_x+20,source.green.center_y+30,true};
+    for(auto mode:{dart::GuidanceMode::Fused,dart::GuidanceMode::ArmorImpact}) {
+        source.guidance_mode=mode;
+        auto predicted=dart::predict_full180_output(source,tracker,c,source.source_received_us+5556);
+        check(predicted.guidance_mode==mode && predicted.armor.valid,"180Hz prediction preserves observed armor fusion mode");
+        check(std::abs(predicted.aim_point.x-predicted.green.center_x-20)<.001 &&
+              std::abs(predicted.aim_point.y-predicted.green.center_y-30)<.001,"fused aim offset follows lamp prediction");
+        check(!predicted.safe_for_control && !predicted.angles_valid && !predicted.armor_detection_ran,
+              "predicted geometry remains fail closed and is not a new armor observation");
+    }
+    auto expired=dart::predict_full180_output(source,tracker,c,
+        source.source_received_us+static_cast<uint64_t>(c.armor.cache_max_age_ms)*1000+1);
+    check(!expired.armor.valid && expired.guidance_mode==dart::GuidanceMode::LampApproach,
+          "geometry expires from actual armor observation time");
+    auto lost=dart::predict_full180_output(source,tracker,c,source.source_received_us+600000);
+    check(!lost.valid && lost.state==dart::GuidanceTrackState::Search,"stopped measurements age out into full search");
+}
+
 void test_pipeline_shutdown_and_map_failure()
 {
     auto c=dart::load_application_config(std::string(TEST_PROJECT_ROOT)+"/config/green_detector_full180.conf");
@@ -993,6 +1024,7 @@ int main()
     test_visual_motion_json_and_future_imu_interpolation();
     test_configuration();
     test_nv21_and_source_roi();
+    test_full180_fused_prediction();
     test_pipeline_shutdown_and_map_failure();
     test_integral_peak_equivalence();
 

@@ -121,6 +121,7 @@ struct TargetEstimate {
     int schema_version = 2;
     bool angles_valid = true; // legacy path; high-fps uncalibrated path clears this
     uint64_t source_sequence = 0, source_pts_raw = 0, source_received_us = 0;
+    uint64_t armor_source_received_us = 0; // high-fps cached geometry observation
     uint64_t application_dropped = 0, upstream_missing = 0;
     uint64_t upstream_duplicate = 0, upstream_reversed = 0;
     bool source_metadata_valid = false;

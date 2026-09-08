@@ -23,6 +23,8 @@ std::vector<Point2f> nv21_green_proposals(const Nv21View &view);
 std::unique_ptr<maix::image::Image> nv21_rgb_region(const Nv21View &view,
                                                   const CandidateRoi &roi, int step=1);
 void invalidate_uncalibrated(TargetEstimate &target);
+TargetEstimate predict_full180_output(const TargetEstimate &source,
+    detail::TemporalTracker tracker, const ApplicationConfig &config, uint64_t now);
 class HighFpsPipeline {
 public:
     explicit HighFpsPipeline(const ApplicationConfig &config, bool idle=false, bool stress=false);

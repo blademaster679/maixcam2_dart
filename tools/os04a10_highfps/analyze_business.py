@@ -65,6 +65,8 @@ def analyze(root):
       'software_receive_to_vision_finish_ms':quantiles([(int(r['finished_us'])-int(r['received_us']))/1000 for r in vision]),
       'software_source_age_at_control_ms':quantiles([(r['timestamp_us']-r['source_received_us'])/1000 for r in valid_sources]),
       'source_exposure_age_ms':None,'exposure_to_control_latency_ms':None,
+      'control_output_semantics':'TargetEstimate generation timestamps; JSONL disk visibility and UART/CAN transport are not measured.',
+      'telemetry_io':{p.name:json.loads(p.read_text()) for p in sorted(root.glob('*.io.json'))},
       'timing_limit':'Host receive timestamps are lower bounds on source age. SDK payload PTS exposure phase and cross-clock offset are unverified.',
       'stage_ms':{key:stage(key) for key in ['search_us','roi_convert_us','detect_us','motion_us']},
       'rss_kb':quantiles([int(r['rss_kb']) for r in health]),

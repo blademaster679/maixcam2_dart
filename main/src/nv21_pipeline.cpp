@@ -80,6 +80,33 @@ void invalidate_uncalibrated(TargetEstimate &t) {
     t.yaw_rad=t.pitch_rad=t.green.yaw_rad=t.green.pitch_rad=0;
     t.line_of_sight_camera={0,0,0}; t.line_of_sight_rate_rad_s={0,0}; t.angular_covariance={0,0};
 }
+TargetEstimate predict_full180_output(const TargetEstimate &source,
+    detail::TemporalTracker tracker,const ApplicationConfig &config,uint64_t now) {
+    if(now<source.source_received_us) throw std::invalid_argument("output precedes source");
+    auto t=source;
+    t.green=tracker.update(nullptr,now,config.detector.camera_model,false);
+    t.timestamp_us=now;t.measurement_age_us=t.green.measurement_age_us;
+    t.valid=t.green.valid;t.predicted=t.green.predicted;
+    t.classical_detection_ran=false;t.armor_detection_ran=false;t.classical_detection_ms=0;
+    const bool armor_fresh=t.armor.valid && t.armor_source_received_us &&
+        now>=t.armor_source_received_us && now-t.armor_source_received_us<=
+        static_cast<uint64_t>(config.armor.cache_max_age_ms)*1000;
+    t.aim_point={t.green.center_x,t.green.center_y,t.green.valid};
+    if(armor_fresh && source.green.valid && source.aim_point.valid && t.green.valid) {
+        // Preserve the measured fusion offset; predict its common translation
+        // with the lamp. Geometry itself remains explicitly source-time data.
+        t.aim_point.x+=source.aim_point.x-source.green.center_x;
+        t.aim_point.y+=source.aim_point.y-source.green.center_y;
+    } else {
+        t.guidance_mode=GuidanceMode::LampApproach;
+        if(!armor_fresh) t.armor=ArmorDetection{};
+    }
+    if(t.green.state==TrackState::Candidate) t.state=GuidanceTrackState::Acquiring;
+    else if(t.green.valid) t.state=GuidanceTrackState::Coasting;
+    else if(source.state!=GuidanceTrackState::Search)
+        t.state=t.measurement_age_us>=500000 ? GuidanceTrackState::Search : GuidanceTrackState::Reacquire;
+    invalidate_uncalibrated(t);return t;
+}
 HighFpsPipeline::HighFpsPipeline(const ApplicationConfig &c,bool idle,bool stress):config_(c),idle_(idle),stress_(stress) {
     if(c.camera.width!=1344 || c.camera.height!=760 || c.camera.fps!=180 ||
        c.npu.enabled || c.target_geometry.pose_enabled || c.detector.classical_interval_frames!=1)
@@ -127,6 +154,7 @@ void HighFpsPipeline::vision_loop() {
         TimestampSchedule measurement(90), search(30), motion_schedule(30), armor_schedule(60);
         std::vector<Point2f> proposals;
         TargetEstimate last;
+        uint64_t armor_source=0;
         size_t cursor=0;
         AsyncLog log("vision.csv");
         log<<"sequence,pts_raw,received_us,started_us,finished_us,search_ran,green_ran,armor_ran,motion_ran,search_us,roi_convert_us,detect_us,motion_us,direct_green,green_us\n";
@@ -172,6 +200,8 @@ void HighFpsPipeline::vision_loop() {
             const auto detect_start=monotonic_us();
             last=detector.process_region(*image,roi,v.width,v.height,f->metadata.received_us,prior.valid?&prior:nullptr,stress_,armor_schedule.due(f->metadata.received_us));
             const auto finished=monotonic_us();
+            if(last.armor_detection_ran) armor_source=last.armor.valid ? f->metadata.received_us : 0;
+            last.armor_source_received_us=last.armor.valid ? armor_source : 0;
             auto snapshot=std::make_shared<Snapshot>(config_.detector);
             snapshot->tracker=detector.tracker_snapshot();
             last.source_metadata_valid=true; last.source_sequence=f->metadata.sequence;
@@ -216,20 +246,7 @@ void HighFpsPipeline::control_loop() {
             const auto now=monotonic_us();
             TargetEstimate t;
             if(latest) {
-                t=latest->target;
-                auto predictor=latest->tracker;
-                t.green=predictor.update(nullptr,now,config_.detector.camera_model,false);
-                t.timestamp_us=now; t.measurement_age_us=t.green.measurement_age_us;
-                t.valid=t.green.valid; t.predicted=t.green.predicted;
-                t.classical_detection_ran=false; t.armor_detection_ran=false; t.classical_detection_ms=0;
-                t.aim_point={t.green.center_x,t.green.center_y,t.green.valid};
-                // Cached armor is observational metadata; no synthetic armor prediction.
-                t.guidance_mode=GuidanceMode::LampApproach;
-                if(t.green.state==TrackState::Candidate) t.state=GuidanceTrackState::Acquiring;
-                else if(t.green.valid) t.state=GuidanceTrackState::Coasting;
-                else if(t.green.state==TrackState::Tracking) t.state=GuidanceTrackState::Reacquire;
-                if(now-t.source_received_us>static_cast<uint64_t>(config_.armor.cache_max_age_ms)*1000)
-                    t.armor=ArmorDetection{};
+                t=predict_full180_output(latest->target,latest->tracker,config_,now);
             } else t.timestamp_us=now;
             invalidate_uncalibrated(t);
             {std::lock_guard<std::mutex> lock(stats_mutex_);

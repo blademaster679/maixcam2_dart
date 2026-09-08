@@ -113,6 +113,7 @@ void write_target_estimate_json(
            << ",\"source_sequence\":" << target.source_sequence
            << ",\"source_pts_raw\":" << target.source_pts_raw
            << ",\"source_received_us\":" << target.source_received_us
+           << ",\"armor_source_received_us\":" << target.armor_source_received_us
            << ",\"application_dropped\":" << target.application_dropped
            << ",\"upstream_missing\":" << target.upstream_missing
            << ",\"upstream_duplicate\":" << target.upstream_duplicate
