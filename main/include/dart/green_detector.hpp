@@ -131,6 +131,7 @@ struct TargetEstimate {
     bool valid = false;
     bool safe_for_control = false;
     bool predicted = false;
+    bool armor_detection_ran = false;
     bool classical_detection_ran = false;
     float classical_detection_ms = 0.0F;
     bool model_ran = false;
@@ -263,6 +264,7 @@ struct DetectorConfig {
     // then run the five-scale ring test only around those components. This
     // preserves 3-5 px targets without the cost of a dense multi-scale scan.
     bool enable_sparse_component_search = false;
+    bool integral_peak_statistics = false; // exact sums; enabled by the source-ROI adapter
     std::array<int, 5> multiscale_diameters_px{3, 5, 8, 12, 18};
     int classical_interval_frames = 1;
     int multiscale_downsample = 1;
@@ -495,7 +497,7 @@ public:
     TargetEstimate process_region(maix::image::Image &roi, const CandidateRoi &region,
                                   int source_width, int source_height,
                                   uint64_t timestamp_us, const MotionPrior *motion = nullptr,
-                                  bool force_armor_scan = false);
+                                  bool force_armor_scan = false, bool run_armor_scan = true);
     detail::TemporalTracker tracker_snapshot() const { return tracker_; }
     // Compatibility alias for early v0.2 callers.
     TargetEstimate process_target(maix::image::Image &frame,
@@ -505,7 +507,7 @@ public:
     const std::vector<GreenLightCandidateDebug> &last_candidates() const;
 
 private:
-    bool region_active_ = false, region_force_armor_ = false;
+    bool region_active_ = false, region_force_armor_ = false, region_run_armor_ = true;
     CandidateRoi region_{};
     int source_width_ = 0, source_height_ = 0;
     struct Candidate;

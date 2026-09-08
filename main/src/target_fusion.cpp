@@ -659,7 +659,7 @@ ArmorDetection armor_from_validation(const PoseValidation &validation)
 
 TargetEstimate GreenLightDetector::process_region(
     maix::image::Image &roi, const CandidateRoi &region, int width, int height,
-    uint64_t timestamp, const MotionPrior *motion, bool force_armor_scan)
+    uint64_t timestamp, const MotionPrior *motion, bool force_armor_scan, bool run_armor_scan)
 {
     if (region.x < 0 || region.y < 0 || region.width != roi.width() ||
         region.height != roi.height() || region.width <= 0 || region.height <= 0 ||
@@ -667,7 +667,7 @@ TargetEstimate GreenLightDetector::process_region(
         throw std::invalid_argument("invalid source ROI");
     if (npu_config_.enabled || target_geometry_.pose_enabled)
         throw std::invalid_argument("ROI mode requires NPU and pose disabled pending calibrated model integration");
-    region_force_armor_ = force_armor_scan;
+    region_force_armor_ = force_armor_scan; region_run_armor_ = run_armor_scan;
     region_active_ = true; region_ = region; source_width_ = width; source_height_ = height;
     try {
         auto result = process(roi, timestamp, motion);
@@ -697,7 +697,8 @@ TargetEstimate GreenLightDetector::process(
             effective_classical_interval <= 1 ||
             (npu_config_.enabled ? last_classical_detection_ran_
                                  : !last_classical_detection_ran_);
-        if (armor_scheduler_slot) {
+        if (armor_scheduler_slot && (!region_active_ || region_run_armor_)) {
+            result.armor_detection_ran = true;
             auto local_green = result.green;
             if (region_active_) {
                 local_green.center_x -= region_.x; local_green.center_y -= region_.y;
@@ -797,7 +798,7 @@ TargetEstimate GreenLightDetector::process(
     }
 
     if (result.armor.valid) {
-        ++armor_pose_hits_;
+        if (!region_active_ || result.armor_detection_ran) ++armor_pose_hits_;
     } else {
         armor_pose_hits_ = 0;
         armor_blend_start_us_ = 0;

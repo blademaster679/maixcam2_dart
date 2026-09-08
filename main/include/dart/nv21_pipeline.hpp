@@ -41,7 +41,10 @@ private:
     LatestFrameSlot<Nv21Frame> frames_;
     LatestFrameSlot<Snapshot> estimates_;
     std::atomic<bool> stopped_{false}, failed_{false};
-    std::thread vision_, control_;
+    struct MotionFrame { std::shared_ptr<maix::image::Image> image; uint64_t timestamp=0; };
+    LatestFrameSlot<MotionFrame> motion_frames_;
+    LatestFrameSlot<MotionPrior> motion_results_;
+    std::thread vision_, control_, motion_;
     std::mutex stats_mutex_;
     SequenceStats sequence_;
     uint64_t first_received_=0, last_received_=0;
@@ -50,5 +53,6 @@ private:
     bool finished_=false;
     void vision_loop();
     void control_loop();
+    void motion_loop();
 };
 } // namespace dart

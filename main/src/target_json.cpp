@@ -121,6 +121,7 @@ void write_target_estimate_json(
            << ",\"safe_for_control\":"
            << (target.safe_for_control ? "true" : "false")
            << ",\"predicted\":" << (target.predicted ? "true" : "false")
+           << ",\"armor_detection_ran\":" << (target.armor_detection_ran ? "true" : "false")
            << ",\"classical_detection_ran\":"
            << (target.classical_detection_ran ? "true" : "false")
            << ",\"classical_detection_ms\":"

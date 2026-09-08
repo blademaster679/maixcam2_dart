@@ -237,7 +237,11 @@ ScalePeak evaluate_component_scale(const uint8_t *rgb,
                                    int center_y,
                                    int diameter,
                                    const DetectorConfig &config,
-                                   bool tracking_confirmed)
+                                   bool tracking_confirmed,
+                                   const IntegralPlane<uint32_t> *response_plane = nullptr,
+                                   const IntegralPlane<uint32_t> *brightness_plane = nullptr,
+                                   const IntegralPlane<uint64_t> *squared_plane = nullptr,
+                                   const Rect *plane_region = nullptr)
 {
     ScalePeak rejected;
     const int radius = std::max(1, diameter / 2);
@@ -262,6 +266,21 @@ ScalePeak evaluate_component_scale(const uint8_t *rgb,
     uint64_t ring_green_sum = 0;
     uint64_t ring_brightness_sum = 0;
     uint64_t ring_brightness_squared_sum = 0;
+    const bool cached = plane_region && response_plane && brightness_plane && squared_plane &&
+        outer.x0 >= plane_region->x0 && outer.y0 >= plane_region->y0 &&
+        outer.x1 <= plane_region->x1 && outer.y1 <= plane_region->y1;
+    if (cached) {
+        auto local = [plane_region](Rect r) {
+            r.x0-=plane_region->x0; r.x1-=plane_region->x0;
+            r.y0-=plane_region->y0; r.y1-=plane_region->y0; return r;
+        };
+        const auto a=local(inner), b=local(outer);
+        inner_green_sum=response_plane->sum(a);
+        inner_brightness_sum=brightness_plane->sum(a);
+        ring_green_sum=response_plane->sum(b)-inner_green_sum;
+        ring_brightness_sum=brightness_plane->sum(b)-inner_brightness_sum;
+        ring_brightness_squared_sum=squared_plane->sum(b)-squared_plane->sum(a);
+    } else {
     for (int y = outer.y0; y < outer.y1; ++y) {
         for (int x = outer.x0; x < outer.x1; ++x) {
             const std::size_t offset =
@@ -284,6 +303,8 @@ ScalePeak evaluate_component_scale(const uint8_t *rgb,
                     static_cast<uint64_t>(brightness) * brightness;
             }
         }
+    }
+
     }
 
     const float inner_normalizer =
@@ -373,8 +394,13 @@ std::vector<ScalePeak> collect_sparse_multiscale_peaks(
         std::vector<TileSeed> tile_seeds(
             static_cast<std::size_t>(tile_columns) * tile_rows);
         IntegralPlane<uint32_t> response_integral(search_width, search_height);
+        IntegralPlane<uint32_t> brightness_integral(config.integral_peak_statistics ? search_width : 0,
+                                                   config.integral_peak_statistics ? search_height : 0);
+        IntegralPlane<uint64_t> squared_integral(config.integral_peak_statistics ? search_width : 0,
+                                                config.integral_peak_statistics ? search_height : 0);
         for (int local_y = 0; local_y < search_height; ++local_y) {
-            uint32_t response_row_sum = 0;
+            uint32_t response_row_sum = 0, brightness_row_sum = 0;
+            uint64_t squared_row_sum = 0;
             const int image_y = search_region.y0 + local_y;
             for (int local_x = 0; local_x < search_width; ++local_x) {
                 const int image_x = search_region.x0 + local_x;
@@ -390,11 +416,15 @@ std::vector<ScalePeak> collect_sparse_multiscale_peaks(
                 response_integral.at(local_x + 1, local_y + 1) =
                     response_integral.at(local_x + 1, local_y) +
                     response_row_sum;
-                if (response < response_threshold) {
-                    continue;
-                }
                 const uint8_t brightness = static_cast<uint8_t>(
                     (77U * red + 150U * green + 29U * blue) >> 8U);
+                if (config.integral_peak_statistics) {
+                    brightness_row_sum+=brightness;
+                    squared_row_sum+=static_cast<uint64_t>(brightness)*brightness;
+                    brightness_integral.at(local_x+1,local_y+1)=brightness_integral.at(local_x+1,local_y)+brightness_row_sum;
+                    squared_integral.at(local_x+1,local_y+1)=squared_integral.at(local_x+1,local_y)+squared_row_sum;
+                }
+                if (response < response_threshold) continue;
                 if (brightness < brightness_threshold) {
                     continue;
                 }
@@ -529,7 +559,11 @@ std::vector<ScalePeak> collect_sparse_multiscale_peaks(
         for (const auto &ranked : refined_peaks) {
             const ScalePeak exact = evaluate_component_scale(
                 rgb, image_width, image_height, ranked.x, ranked.y,
-                ranked.diameter, config, tracking_confirmed);
+                ranked.diameter, config, tracking_confirmed,
+                config.integral_peak_statistics ? &response_integral : nullptr,
+                config.integral_peak_statistics ? &brightness_integral : nullptr,
+                config.integral_peak_statistics ? &squared_integral : nullptr,
+                config.integral_peak_statistics ? &search_region : nullptr);
             if (exact.diameter > 0) {
                 peaks.push_back(exact);
             }
@@ -1880,6 +1914,7 @@ GreenLightDetection GreenLightDetector::process_green(
         local_config.camera_model.principal_y -= region_.y;
         // Cone gating happens in source coordinates after collection.
         local_config.enable_capture_cone = false;
+        local_config.integral_peak_statistics = true;
         GreenLightDetector local(local_config, armor_config_, target_geometry_);
         local.tracker_ = tracker_.roi_view(region_.x, region_.y);
         candidates = local.collect_candidates(frame);

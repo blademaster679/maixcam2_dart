@@ -84,8 +84,11 @@ HighFpsPipeline::HighFpsPipeline(const ApplicationConfig &c,bool idle,bool stres
        c.npu.enabled || c.target_geometry.pose_enabled || c.detector.classical_interval_frames!=1)
         throw std::invalid_argument("full180 pipeline requires 1344x760@180, per-observation detector, NPU/pose disabled");
     vision_=std::thread(&HighFpsPipeline::vision_loop,this);
-    try { control_=std::thread(&HighFpsPipeline::control_loop,this); }
-    catch(...) { stopped_=true; frames_.close(); vision_.join(); throw; }
+    try {
+        control_=std::thread(&HighFpsPipeline::control_loop,this);
+        motion_=std::thread(&HighFpsPipeline::motion_loop,this);
+    } catch(...) { stopped_=true; frames_.close(); motion_frames_.close();
+        vision_.join(); if(control_.joinable()) control_.join(); throw; }
 }
 HighFpsPipeline::~HighFpsPipeline(){finish();}
 void HighFpsPipeline::submit(std::shared_ptr<Nv21Frame> f) {
@@ -98,7 +101,10 @@ void HighFpsPipeline::finish() {
     if(finished_) return;
     stopped_=true; frames_.close();
     if(vision_.joinable()) vision_.join();
+    motion_frames_.close();
+    if(motion_.joinable()) motion_.join();
     if(control_.joinable()) control_.join();
+    motion_results_.close();
     estimates_.close();
     const auto fs=frames_.stats();
     std::lock_guard<std::mutex> lock(stats_mutex_);
@@ -117,13 +123,12 @@ void HighFpsPipeline::finish() {
 void HighFpsPipeline::vision_loop() {
     try {
         GreenLightDetector detector(config_.detector,config_.armor,config_.target_geometry,config_.npu);
-        VisualMotionEstimator motion(config_.visual_motion);
-        TimestampSchedule measurement(90), search(30), motion_schedule(30);
+        TimestampSchedule measurement(90), search(30), motion_schedule(30), armor_schedule(60);
         std::vector<Point2f> proposals;
         TargetEstimate last;
         size_t cursor=0;
         std::ofstream log("vision.csv");
-        log<<"sequence,pts_raw,received_us,started_us,finished_us,search_ran,green_ran,armor_ran,motion_ran,search_us,roi_convert_us,detect_us,motion_us,direct_green\n";
+        log<<"sequence,pts_raw,received_us,started_us,finished_us,search_ran,green_ran,armor_ran,motion_ran,search_us,roi_convert_us,detect_us,motion_us,direct_green,green_us\n";
         while(auto f=frames_.wait()) {
             if(stopped_) break;
             const auto started=monotonic_us();
@@ -139,35 +144,64 @@ void HighFpsPipeline::vision_loop() {
             const bool tracked=last.green.valid && !last.green.predicted;
             if(tracked) center={prediction.predicted_x(),prediction.predicted_y(),true};
             else if(!proposals.empty()) center=proposals[cursor++%proposals.size()];
-            const int size=tracked ? std::clamp(static_cast<int>(last.green.apparent_size*12),128,384) : 128;
+            const int size=tracked ? std::clamp(static_cast<int>(last.green.apparent_size*12),128,384) : 96;
             const auto roi=source_roi(center.x,center.y,size,v.width,v.height);
             const auto convert_start=monotonic_us();
             auto image=nv21_rgb_region(v,roi);
             const auto convert_end=monotonic_us();
             MotionPrior prior;
+            if(auto ready=motion_results_.take()) {
+                if(ready->timestamp_us<=f->metadata.received_us &&
+                   f->metadata.received_us-ready->timestamp_us<=50000) prior=*ready;
+            }
             const bool motion_ran=config_.visual_motion.enabled && (tracked || stress_) && motion_schedule.due(f->metadata.received_us);
             const auto motion_start=monotonic_us();
             if(motion_ran) {
-                auto thumb=nv21_rgb_region(v,{0,0,v.width,v.height},4);
-                prior=motion.update(*thumb,f->metadata.received_us);
-                prior.image_dx_px*=4;prior.image_dy_px*=4;
-            } else if(!tracked && !stress_) motion.reset();
+                // KLT needs luminance only. Sample Y directly; no full-field color conversion.
+                auto job=std::make_shared<MotionFrame>(); job->timestamp=f->metadata.received_us;
+                job->image=std::make_shared<maix::image::Image>(v.width/8,v.height/8,maix::image::Format::FMT_RGB888);
+                auto *out=static_cast<uint8_t*>(job->image->data());
+                for(int y=0;y<v.height;y+=8) for(int x=0;x<v.width;x+=8) {
+                    const auto value=clip((298*(v.y[y*v.y_stride+x]-16)+128)>>8);
+                    *out++=value;*out++=value;*out++=value;
+                }
+                motion_frames_.publish(job);
+            }
             const auto motion_end=monotonic_us();
             const auto detect_start=monotonic_us();
-            last=detector.process_region(*image,roi,v.width,v.height,f->metadata.received_us,prior.valid?&prior:nullptr,stress_);
+            last=detector.process_region(*image,roi,v.width,v.height,f->metadata.received_us,prior.valid?&prior:nullptr,stress_,armor_schedule.due(f->metadata.received_us));
             const auto finished=monotonic_us();
             auto snapshot=std::make_shared<Snapshot>(config_.detector);
             snapshot->tracker=detector.tracker_snapshot();
             last.source_metadata_valid=true; last.source_sequence=f->metadata.sequence;
             last.source_pts_raw=f->metadata.pts_raw; last.source_received_us=f->metadata.received_us;
             invalidate_uncalibrated(last); snapshot->target=last; estimates_.publish(snapshot);
-            const bool armor_ran=stress_ || last.green.apparent_size>=config_.armor.min_green_size_px;
+            const bool armor_ran=last.armor_detection_ran;
             ++vision_count_; if(last.classical_detection_ran) ++green_count_; if(armor_ran) ++armor_count_;
-            log<<f->metadata.sequence<<','<<f->metadata.pts_raw<<','<<f->metadata.received_us<<','<<started<<','<<finished<<','<<full<<",1,"<<armor_ran<<','<<motion_ran<<','<<search_end-search_start<<','<<convert_end-convert_start<<','<<finished-detect_start<<','<<motion_end-motion_start<<','<<(last.green.valid&&!last.green.predicted)<<'\n';
+            log<<f->metadata.sequence<<','<<f->metadata.pts_raw<<','<<f->metadata.received_us<<','<<started<<','<<finished<<','<<full<<",1,"<<armor_ran<<','<<motion_ran<<','<<search_end-search_start<<','<<convert_end-convert_start<<','<<finished-detect_start<<','<<motion_end-motion_start<<','<<(last.green.valid&&!last.green.predicted)<<','<<last.classical_detection_ms*1000<<'\n';
             if(!log) throw std::runtime_error("vision metrics write failed");
         }
         log.flush(); if(!log) throw std::runtime_error("vision metrics flush failed");
     } catch(const std::exception &e) { std::cerr<<"vision: "<<e.what()<<'\n';failed_=true;stopped_=true;frames_.close(); }
+}
+void HighFpsPipeline::motion_loop() {
+    try {
+        VisualMotionEstimator estimator(config_.visual_motion);
+        std::ofstream log("motion.csv");log<<"timestamp_us,started_us,finished_us,valid\n";
+        uint64_t previous=0;
+        while(auto job=motion_frames_.wait()) {
+            if(stopped_) break;
+            if(previous && job->timestamp-previous>100000) estimator.reset();
+            previous=job->timestamp;
+            const auto start=monotonic_us();
+            auto prior=std::make_shared<MotionPrior>(estimator.update(*job->image,job->timestamp));
+            prior->image_dx_px*=8;prior->image_dy_px*=8;
+            motion_results_.publish(prior);
+            log<<job->timestamp<<','<<start<<','<<monotonic_us()<<','<<prior->valid<<'\n';
+            if(!log) throw std::runtime_error("motion metrics write failed");
+        }
+        log.flush();if(!log) throw std::runtime_error("motion metrics flush failed");
+    } catch(const std::exception &e) {std::cerr<<"motion: "<<e.what()<<'\n';failed_=true;stopped_=true;frames_.close();}
 }
 void HighFpsPipeline::control_loop() {
     try {
@@ -184,7 +218,7 @@ void HighFpsPipeline::control_loop() {
                 t.green=predictor.update(nullptr,now,config_.detector.camera_model,false);
                 t.timestamp_us=now; t.measurement_age_us=t.green.measurement_age_us;
                 t.valid=t.green.valid; t.predicted=t.green.predicted;
-                t.classical_detection_ran=false; t.classical_detection_ms=0;
+                t.classical_detection_ran=false; t.armor_detection_ran=false; t.classical_detection_ms=0;
                 t.aim_point={t.green.center_x,t.green.center_y,t.green.valid};
                 // Cached armor is observational metadata; no synthetic armor prediction.
                 t.guidance_mode=GuidanceMode::LampApproach;
