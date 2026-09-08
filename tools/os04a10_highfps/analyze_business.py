@@ -47,6 +47,9 @@ def analyze(root):
     gaps=sum(max(0,b-a-1) for a,b in zip(seq,seq[1:]));dup=sum(a==b for a,b in zip(seq,seq[1:]));rev=sum(b<a for a,b in zip(seq,seq[1:]))
     result={
       'run':str(root),'seconds':seconds,'capture_exit_code':capture['exit_code'],
+      'interrupted':capture.get('interrupted',False),
+      'negative_software_source_age_count':sum(r['timestamp_us']<r['source_received_us'] for r in valid_sources),
+      'output_timestamp_nonincreasing':sum(b['timestamp_us']<=a['timestamp_us'] for a,b in zip(targets,targets[1:])),
       'sensor_vin_ife_end_snapshot':proc_table(root/'vin_statistics_after.txt','[IFE]'),
       'vin_itp_end_snapshot':proc_table(root/'vin_statistics_after.txt','[ITP]'),
       'nv21_channel_end_snapshot':proc_table(root/'vin_statistics_after.txt','[CHN]'),

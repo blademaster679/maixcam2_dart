@@ -132,7 +132,7 @@ def main():
             raise RuntimeError(f'{name} failed ({result.returncode}); see {local}')
         return result
     def transfer(command):
-        result = subprocess.run(command, env=command_env(device), capture_output=True, text=True, timeout=60)
+        result = subprocess.run(command, env=command_env(device), capture_output=True, text=True, timeout=max(60, args.seconds // 10) if args.business_config else 60)
         if result.returncode:
             raise RuntimeError('Transfer failed: '+result.stderr)
     status = ssh(launcher.status_command(), 'mode-before').stdout
@@ -243,7 +243,7 @@ def main():
     if any(n not in artifact_names for n in names):
         raise RuntimeError('Unexpected artifact filename')
     if names:
-        ssh('cd '+shlex.quote(remote)+' && tar -cf artifacts.tar '+shlex.join(names), 'pack-artifacts')
+        ssh('cd '+shlex.quote(remote)+' && tar -cf artifacts.tar '+shlex.join(names), 'pack-artifacts', timeout=120 if args.business_config and args.seconds>120 else 30)
         transfer(scp_from_command(device, remote+'/artifacts.tar', str(local/'artifacts.tar')))
         with tarfile.open(local/'artifacts.tar') as archive:
             for member in archive:

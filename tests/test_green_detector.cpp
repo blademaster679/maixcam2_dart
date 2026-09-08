@@ -933,6 +933,13 @@ void test_pipeline_shutdown_and_map_failure()
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
         pipeline.finish();check(!pipeline.failed(),"async motion and control pipeline completes real synthetic image work");
+        std::ifstream outputs("targets.jsonl");std::string line;
+        while(std::getline(outputs,line)) {
+            if(line.find("\"source_metadata_valid\":true")==std::string::npos) continue;
+            const auto stamp=std::stoull(line.substr(line.find("\"timestamp_us\":")+15));
+            const auto source=std::stoull(line.substr(line.find("\"source_received_us\":")+21));
+            check(stamp>=source,"output timestamp follows acquired source snapshot");
+        }
     }
     check(released==6,"all submitted frames released after vision and motion join");
     {

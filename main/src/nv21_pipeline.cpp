@@ -209,8 +209,10 @@ void HighFpsPipeline::control_loop() {
         std::shared_ptr<Snapshot> latest;
         const auto origin=std::chrono::steady_clock::now(); uint64_t tick=0;
         while(!stopped_) {
-            const auto now=monotonic_us();
             if(auto next=estimates_.take()) latest=std::move(next);
+            // Read after acquiring the snapshot: preemption must not make the
+            // output timestamp earlier than a newly published source frame.
+            const auto now=monotonic_us();
             TargetEstimate t;
             if(latest) {
                 t=latest->target;
