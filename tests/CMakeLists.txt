@@ -37,3 +37,10 @@ else()
 endif()
 
 add_test(NAME green_detector_tests COMMAND green_detector_tests)
+
+find_package(Threads REQUIRED)
+add_executable(async_frame_tests test_async_frame.cpp)
+target_compile_features(async_frame_tests PRIVATE cxx_std_17)
+target_include_directories(async_frame_tests PRIVATE ../main/include)
+target_link_libraries(async_frame_tests PRIVATE Threads::Threads)
+add_test(NAME async_frame_tests COMMAND async_frame_tests)
