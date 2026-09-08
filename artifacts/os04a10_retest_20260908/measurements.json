@@ -1,0 +1,1749 @@
+[
+  {
+    "run": ".maixpy/runs/os04a10-20260908-145248-e84663",
+    "exit_code": 0,
+    "staged_sha256": {
+      "capture": "c859765f016d190fcc190bec89101fda972daab3596a6c2eef90c64ef3850128",
+      "libmaixcam_lib.so": "df8ce04135e229b7733652f3824c1de6a8f56533d1f605c54009f1689f1b5b76",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6"
+    },
+    "capture": {
+      "requested_fps": 30,
+      "measurement": "VIN IFE RAW",
+      "frames": 151,
+      "monotonic_fps": 30.28138065,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": false,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   213       0          212       0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    11481     11482     11478     11530    \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    12645     12668     12610     15242    \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          211       0          211       30.27  0         0x5e004003 0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     211      0         211      30.27 0        0x5e004003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     210       209        210       30.27  1         0x5e001001 0        \n"
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-145553-206773",
+    "exit_code": 0,
+    "staged_sha256": {
+      "capture": "52676d378bddf68d2655d82c4600f60ace1fd7125a173e955407dfc9751fe9af",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 43180,
+      "monotonic_fps": 359.8324305,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "realtime": false,
+      "burst_recording": false,
+      "burst_frames": 0,
+      "burst_frame_bytes": 0,
+      "sample_saved": false,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 43180,
+      "monotonic_fps": 359.8324305396906,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 1000000.375007744,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2752.0,
+        "p95": 2940.0,
+        "p99": 3103.0,
+        "max": 11343
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 11,
+      "window_fps_10s": [
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8
+      ],
+      "min_window_fps_10s": 359.8,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 58.63137254901961,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 120,
+        "temperature_min_c": 43.851,
+        "temperature_max_c": 58.6314,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22540,
+        "rss_max_kb": 25884,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   43908     0          43907     0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    784       781       712       915      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1642      1671      1497      2376     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          43903     0          43905     359.7  0         0x5e002003 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     43903    0         43905    359.7 0        0x5e002003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     43902     0          43904     359.7  0         0x5e001000 0        \n",
+    "scheduler.txt": "policy=0 realtime_requested=0\n"
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-145815-2e5921",
+    "exit_code": 0,
+    "staged_sha256": {
+      "capture": "52676d378bddf68d2655d82c4600f60ace1fd7125a173e955407dfc9751fe9af",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 43180,
+      "monotonic_fps": 359.8318428,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 8,
+      "realtime": false,
+      "burst_recording": false,
+      "burst_frames": 0,
+      "burst_frame_bytes": 0,
+      "sample_saved": false,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 43180,
+      "monotonic_fps": 359.83184280221064,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 999999.0999828847,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2752.0,
+        "p95": 2946.0999999999985,
+        "p99": 3120.0,
+        "max": 11122
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 11,
+      "window_fps_10s": [
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8
+      ],
+      "min_window_fps_10s": 359.8,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 61.28235294117647,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 120,
+        "temperature_min_c": 53.2471,
+        "temperature_max_c": 61.2078,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22548,
+        "rss_max_kb": 25892,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   43908     0          43907     0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    787       781       717       924      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1653      1671      1493      3651     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          43903     0          43905     359.9  0         0x5e002003 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     43903    0         43905    359.9 0        0x5e002003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     43902     0          43904     359.9  0         0x5e001000 0        \n",
+    "scheduler.txt": "policy=0 realtime_requested=0\n"
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-150105-e9f03c",
+    "exit_code": 10,
+    "staged_sha256": {
+      "capture": "08ca854e9371aed37b06f7a398dbd9c6b9373b9612b203eb9b59561b121079bf",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV12 + asynchronous AX VENC",
+      "frames": 201,
+      "monotonic_fps": 342.2137809,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "recording": true,
+      "encoded_submissions": 201,
+      "encoded_packets": 201,
+      "encoder_queue_dropped": 0,
+      "encoder_send_errors": 0,
+      "encoder_release_errors": 0,
+      "encoder_queue_full_events": 0,
+      "encoder_retry": false,
+      "queue_depth": 8,
+      "sample_saved": false,
+      "exit_code": 10,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 201,
+      "monotonic_fps": 342.2137809489588,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 3,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779.0,
+      "pts_ticks_per_monotonic_second": 965301.2336806803,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2686.5,
+        "p95": 7730.39999999999,
+        "p99": 13217.639999999954,
+        "max": 20147
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 52.870588235294115,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1,
+        "temperature_min_c": 52.1098,
+        "temperature_max_c": 52.1098,
+        "mipi_error_max": 0,
+        "rss_min_kb": 23476,
+        "rss_max_kb": 23476,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "venc_config": {
+      "rc_src_fps": 180,
+      "rc_dst_fps": 180,
+      "input_depth": 4,
+      "output_depth": 4,
+      "retry_queue_full": false
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1078      0          1077      0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    810       779       742       840      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1831      1695      1546      2311     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          1073      0          1075      359.7  0         0x5e002002 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     1073     0         1075     359.7 0        0x5e002002\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     1073      142        1075      359.7  8         0x5e001004 0        \n",
+    "send_summary": {
+      "max_elapsed_us": 20032,
+      "retries": 0,
+      "rows": 201,
+      "errors": 0
+    }
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-150128-ccf2f6",
+    "exit_code": 10,
+    "staged_sha256": {
+      "capture": "08ca854e9371aed37b06f7a398dbd9c6b9373b9612b203eb9b59561b121079bf",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV12 + asynchronous AX VENC",
+      "frames": 16,
+      "monotonic_fps": 227.7835145,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "recording": true,
+      "encoded_submissions": 16,
+      "encoded_packets": 16,
+      "encoder_queue_dropped": 0,
+      "encoder_send_errors": 0,
+      "encoder_release_errors": 0,
+      "encoder_queue_full_events": 82,
+      "encoder_retry": true,
+      "queue_depth": 8,
+      "sample_saved": false,
+      "exit_code": 10,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 16,
+      "monotonic_fps": 227.7835145477738,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 1,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 675226.2649577841,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 847.0,
+        "p95": 18994.699999999997,
+        "p99": 20136.539999999997,
+        "max": 20422
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 51.65882352941176,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1,
+        "temperature_min_c": 50.902,
+        "temperature_max_c": 50.902,
+        "mipi_error_max": 0,
+        "rss_min_kb": 23476,
+        "rss_max_kb": 23476,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "venc_config": {
+      "rc_src_fps": 180,
+      "rc_dst_fps": 180,
+      "input_depth": 4,
+      "output_depth": 4,
+      "retry_queue_full": true
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   2         0          1         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1080      0          1079      0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    774       778       734       847      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1718      1671      1496      2580     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          1075      0          1077      359.7  0         0x5e002003 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     1075     0         1077     359.7 0        0x5e002003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     1074      328        1076      359.7  8         0x5e001004 0        \n",
+    "send_summary": {
+      "max_elapsed_us": 20352,
+      "retries": 82,
+      "rows": 16,
+      "errors": 0
+    }
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-150150-b6faf2",
+    "exit_code": 8,
+    "staged_sha256": {
+      "capture": "08ca854e9371aed37b06f7a398dbd9c6b9373b9612b203eb9b59561b121079bf",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n"
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-150256-2cf469",
+    "exit_code": 10,
+    "staged_sha256": {
+      "capture": "52676d378bddf68d2655d82c4600f60ace1fd7125a173e955407dfc9751fe9af",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 39307,
+      "monotonic_fps": 359.8228206,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 8,
+      "realtime": false,
+      "burst_recording": false,
+      "burst_frames": 0,
+      "burst_frame_bytes": 0,
+      "sample_saved": false,
+      "exit_code": 10,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 39307,
+      "monotonic_fps": 359.822820628626,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 1,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779.0,
+      "pts_ticks_per_monotonic_second": 999999.6063608282,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2751.0,
+        "p95": 2938.0,
+        "p99": 3095.0,
+        "max": 7489
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 10,
+      "window_fps_10s": [
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9
+      ],
+      "min_window_fps_10s": 359.8,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 61.8156862745098,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 110,
+        "temperature_min_c": 58.9373,
+        "temperature_max_c": 61.8157,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22560,
+        "rss_max_kb": 25624,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   40034     0          40033     0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    796       780       716       920      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1761      1675      1499      4553     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          40029     0          40031     359.7  0         0x5e002003 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     40029    1         40031    359.7 0        0x5e002003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     40027     0          40030     359.7  0         0x5e001000 0        \n",
+    "scheduler.txt": "policy=0 realtime_requested=0\n"
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-150606-9f4c3a",
+    "exit_code": 12,
+    "staged_sha256": {
+      "capture": "2f917d306e8a5617cf99cdf4374a8dc2b0a48652d0dc8a82b0ce63cb2120fe3a",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV12 + asynchronous AX VENC",
+      "frames": 91,
+      "monotonic_fps": 358.9590188,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "recording": true,
+      "encoded_submissions": 91,
+      "encoded_packets": 91,
+      "encoder_queue_dropped": 0,
+      "encoder_send_errors": 0,
+      "encoder_release_errors": 0,
+      "encoder_queue_full_events": 590,
+      "encoder_retry": true,
+      "encoder_worker": true,
+      "encoder_worker_high_water": 32,
+      "queue_depth": 8,
+      "sample_saved": false,
+      "exit_code": 12,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 91,
+      "monotonic_fps": 358.9590188453485,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779.0,
+      "pts_ticks_per_monotonic_second": 997575.0324060225,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2743.0,
+        "p95": 3159.95,
+        "p99": 3397.6499999999996,
+        "max": 3856
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 51.12549019607843,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1,
+        "temperature_min_c": 50.2941,
+        "temperature_max_c": 50.2941,
+        "mipi_error_max": 0,
+        "rss_min_kb": 23532,
+        "rss_max_kb": 23532,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "venc_config": {
+      "rc_src_fps": 180,
+      "rc_dst_fps": 180,
+      "input_depth": 4,
+      "output_depth": 4,
+      "retry_queue_full": true
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1081      0          1080      0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    806       776       736       862      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1700      1678      1516      2350     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          1076      0          1078      359.9  0         0x5e004002 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     1076     0         1078     359.9 0        0x5e004002\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     1076      253        1078      359.9  8         0x5e001014 0        \n",
+    "send_summary": {
+      "max_elapsed_us": 24005,
+      "retries": 590,
+      "rows": 91,
+      "errors": 0
+    }
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-150832-bf308a",
+    "exit_code": 0,
+    "staged_sha256": {
+      "capture": "3b0cb00b38f26a320f7feb6b2c96138db5232ba77c4f88cf8e49319dcc4e3128",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 43180,
+      "monotonic_fps": 359.8323556,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 8,
+      "realtime": false,
+      "itp_depth_request": 4,
+      "burst_recording": false,
+      "burst_frames": 0,
+      "burst_frame_bytes": 0,
+      "sample_saved": false,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 43180,
+      "monotonic_fps": 359.8323555730685,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 1000000.3083396363,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2751.0,
+        "p95": 2955.0,
+        "p99": 3134.4400000000023,
+        "max": 13993
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 11,
+      "window_fps_10s": [
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8
+      ],
+      "min_window_fps_10s": 359.8,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 59.54117647058823,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 120,
+        "temperature_min_c": 46.0471,
+        "temperature_max_c": 59.4627,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22552,
+        "rss_max_kb": 25896,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "itp_depth": {
+      "before": 1,
+      "after": 4,
+      "get_before": 0,
+      "set": 0,
+      "get_after": 0
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   43908     0          43907     0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    782       781       716       933      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1687      1674      1496      2345     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          43903     0          43905     359.7  0         0x5e002003 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     43903    0         43905    359.7 0        0x5e002003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     43902     0          43904     359.7  0         0x5e001000 0        \n",
+    "scheduler.txt": "policy=0 realtime_requested=0\n"
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-151123-cbfdb9",
+    "exit_code": 12,
+    "staged_sha256": {
+      "capture": "3ac1fd44bfd68d15546916270552aa1bf246c60141f879cacf70092ca44aaa01",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV12 + asynchronous AX VENC",
+      "frames": 94,
+      "monotonic_fps": 359.8653407,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "recording": true,
+      "encoded_submissions": 64,
+      "encoded_packets": 64,
+      "encoder_queue_dropped": 0,
+      "encoder_send_errors": 1,
+      "encoder_release_errors": 0,
+      "encoder_queue_full_events": 369,
+      "encoder_retry": true,
+      "encoder_worker": true,
+      "encoder_worker_high_water": 29,
+      "queue_depth": 8,
+      "sample_saved": false,
+      "exit_code": 12,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 94,
+      "monotonic_fps": 359.86534071121775,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 1000092.8684750223,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2756.0,
+        "p95": 3327.3999999999996,
+        "p99": 4084.6799999999985,
+        "max": 5024
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 51.733333333333334,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1,
+        "temperature_min_c": 50.9765,
+        "temperature_max_c": 50.9765,
+        "mipi_error_max": 0,
+        "rss_min_kb": 23524,
+        "rss_max_kb": 23524,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "venc_config": {
+      "rc_src_fps": 180,
+      "rc_dst_fps": 180,
+      "input_depth": 4,
+      "output_depth": 4,
+      "retry_queue_full": true
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1077      0          1076      0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    806       776       741       845      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1757      1673      1522      2324     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          1072      0          1074      359.7  0         0x5e004003 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     1072     0         1074     359.7 0        0x5e004003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     1072      247        1074      359.7  8         0x5e001012 0        \n",
+    "send_summary": {
+      "max_elapsed_us": 20494,
+      "retries": 368,
+      "rows": 65,
+      "errors": 1
+    }
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-151159-ff418f",
+    "exit_code": 0,
+    "staged_sha256": {
+      "capture": "3b0cb00b38f26a320f7feb6b2c96138db5232ba77c4f88cf8e49319dcc4e3128",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 647698,
+      "monotonic_fps": 359.8321492,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 8,
+      "realtime": false,
+      "itp_depth_request": 4,
+      "burst_recording": false,
+      "burst_frames": 0,
+      "burst_frame_bytes": 0,
+      "sample_saved": false,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 647698,
+      "monotonic_fps": 359.83214924156016,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 1000000.0216666957,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2752.0,
+        "p95": 2944.0,
+        "p99": 3117.0,
+        "max": 16722
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 179,
+      "window_fps_10s": [
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8,
+        359.8,
+        359.9,
+        359.8
+      ],
+      "min_window_fps_10s": 359.8,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 64.69411764705882,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1800,
+        "temperature_min_c": 49.0784,
+        "temperature_max_c": 64.7725,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22560,
+        "rss_max_kb": 73012,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "itp_depth": {
+      "before": 1,
+      "after": 4,
+      "get_before": 0,
+      "set": 0,
+      "get_after": 0
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   648426    0          648425    0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    799       781       651       1171     \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1727      1676      1495      5712     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          648421    0          648423    359.7  0         0x5e002003 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     648421   0         648423   359.7 0        0x5e002003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     648421    0          648423    359.7  1         0x5e001000 0        \n",
+    "scheduler.txt": "policy=0 realtime_requested=0\n"
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-154304-416aa7",
+    "exit_code": 12,
+    "staged_sha256": {
+      "capture": "28dc4b54e7112c13fd227c1193bb786337ec7c05f16b9d1054acf773df3618eb",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV12 + asynchronous AX VENC",
+      "frames": 102,
+      "monotonic_fps": 359.8160307,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "recording": true,
+      "encoded_submissions": 102,
+      "encoded_packets": 102,
+      "encoder_queue_dropped": 1,
+      "encoder_worker_rejected": 1,
+      "encoder_send_errors": 0,
+      "encoder_release_errors": 0,
+      "encoder_queue_full_events": 428,
+      "encoder_retry": true,
+      "encoder_worker": true,
+      "encoder_worker_high_water": 32,
+      "encoder_input_copy": true,
+      "queue_depth": 8,
+      "sample_saved": false,
+      "exit_code": 12,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 102,
+      "monotonic_fps": 359.8160306948012,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 999957.2495805115,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2739.0,
+        "p95": 3456.0,
+        "p99": 3690.0,
+        "max": 3865
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 54.30980392156863,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1,
+        "temperature_min_c": 53.5529,
+        "temperature_max_c": 53.5529,
+        "mipi_error_max": 0,
+        "rss_min_kb": 23524,
+        "rss_max_kb": 23524,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "venc_config": {
+      "rc_src_fps": 180,
+      "rc_dst_fps": 180,
+      "input_depth": 4,
+      "output_depth": 4,
+      "retry_queue_full": true
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1080      0          1079      0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    775       778       743       850      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1694      1680      1531      2211     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          1075      0          1077      359.7  0         0x5e004003 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     1075     0         1077     359.7 0        0x5e004003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     1075      239        1077      359.7  8         0x5e001015 0        \n",
+    "send_summary": {
+      "max_elapsed_us": 24152,
+      "retries": 428,
+      "rows": 102,
+      "errors": 0
+    }
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-154359-584398",
+    "exit_code": 12,
+    "staged_sha256": {
+      "capture": "8d0542c4d19062b913406066c991c0480bcbceb99a41a1eea31f75d702f75750",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV12 + asynchronous AX VENC",
+      "frames": 240,
+      "monotonic_fps": 359.3984962,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "recording": true,
+      "encoded_submissions": 240,
+      "encoded_packets": 240,
+      "encoder_queue_dropped": 1,
+      "encoder_worker_rejected": 1,
+      "encoder_send_errors": 0,
+      "encoder_release_errors": 0,
+      "encoder_queue_full_events": 737,
+      "encoder_retry": true,
+      "encoder_worker": true,
+      "encoder_worker_high_water": 32,
+      "encoder_input_copy": false,
+      "queue_depth": 8,
+      "sample_saved": false,
+      "exit_code": 12,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 240,
+      "monotonic_fps": 359.3984962406015,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 998793.984962406,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2751.0,
+        "p95": 3211.0,
+        "p99": 3747.6400000000003,
+        "max": 10945
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 51.35294117647059,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1,
+        "temperature_min_c": 50.5961,
+        "temperature_max_c": 50.5961,
+        "mipi_error_max": 0,
+        "rss_min_kb": 23524,
+        "rss_max_kb": 23524,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "venc_config": {
+      "rc_src_fps": 180,
+      "rc_dst_fps": 180,
+      "input_depth": 8,
+      "output_depth": 8,
+      "retry_queue_full": true
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1079      0          1078      0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    777       779       737       981      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1765      1702      1553      2488     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          1074      0          1076      359.9  0         0x5e004004 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     1074     0         1076     359.9 0        0x5e004004\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     1073      101        1075      359.9  8         0x5e001014 0        \n",
+    "send_summary": {
+      "max_elapsed_us": 35786,
+      "retries": 737,
+      "rows": 240,
+      "errors": 0
+    }
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-154445-f020df",
+    "exit_code": 0,
+    "staged_sha256": {
+      "capture": "3b0cb00b38f26a320f7feb6b2c96138db5232ba77c4f88cf8e49319dcc4e3128",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6",
+      "libsns_os04a10.so": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273"
+    },
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 360,
+      "monotonic_fps": 359.6758309,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 8,
+      "realtime": false,
+      "itp_depth_request": 4,
+      "burst_recording": true,
+      "burst_frames": 360,
+      "burst_frame_bytes": 345600,
+      "sample_saved": false,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 360,
+      "monotonic_fps": 359.67583088623525,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 999564.1810962799,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2753.0,
+        "p95": 3215.8999999999996,
+        "p99": 4286.100000000008,
+        "max": 15795
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 49.9921568627451,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1,
+        "temperature_min_c": 49.1569,
+        "temperature_max_c": 49.1569,
+        "mipi_error_max": 0,
+        "rss_min_kb": 149108,
+        "rss_max_kb": 149108,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "itp_depth": {
+      "before": 1,
+      "after": 4,
+      "get_before": 0,
+      "set": 0,
+      "get_after": 0
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1087      0          1086      0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    793       781       741       883      \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    1702      1699      1528      2149     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          1082      0          1084      359.9  0         0x5e002002 2      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     1082     0         1084     359.9 0        0x5e002002\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     1082      0          1084      359.9  0         0x5e001000 0        \n",
+    "scheduler.txt": "policy=0 realtime_requested=0\n"
+  },
+  {
+    "run": ".maixpy/runs/os04a10-20260908-154552-e611a8",
+    "exit_code": 0,
+    "staged_sha256": {
+      "capture": "c859765f016d190fcc190bec89101fda972daab3596a6c2eef90c64ef3850128",
+      "libmaixcam_lib.so": "df8ce04135e229b7733652f3824c1de6a8f56533d1f605c54009f1689f1b5b76",
+      "libms_asr_ax630c.so": "8ff129c3e267ada9125a14e00094d01944d0eaeba993ab3e5af729991da30045",
+      "libasound.so.2": "5c9187c48e905a16032cc255e78df268d0b45e0bf4014ba8f231d380f32a535e",
+      "libdatachannel.so": "d70736e7c42420a94b5098b694193374b611aa3e852158dd524fa9d56cf5f3ff",
+      "libonnxruntime.so.1": "e7f9a48900acc70c4d05a8bbdbf2c15ec67c108713683878f792b9ca41e8f33e",
+      "libtinyalsa.so.2": "9b42abd3d7a7cde163aa0051a174aa09d916c9f2343466be4a9f9d6c81ec7ec6"
+    },
+    "capture": {
+      "requested_fps": 30,
+      "measurement": "VIN IFE RAW",
+      "frames": 151,
+      "monotonic_fps": 30.28133785,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": false,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 151,
+      "monotonic_fps": 30.281337853731447,
+      "dimensions": [
+        [
+          2688,
+          1520
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 33024.0,
+      "pts_ticks_per_monotonic_second": 999995.9624882862,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 33018.5,
+        "p95": 33103.7,
+        "p99": 33274.16,
+        "max": 33476
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 72000000.0,
+        "hts": 732,
+        "vts": 3248,
+        "timing_fps_inferred": 30.283453121214567,
+        "exposure_lines": 2950,
+        "width": 2688,
+        "height": 1520,
+        "window": [
+          0,
+          0,
+          2703,
+          1535
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 72000000.0,
+        "hts": 732,
+        "vts": 3248,
+        "timing_fps_inferred": 30.283453121214567,
+        "exposure_lines": 2950,
+        "width": 2688,
+        "height": 1520,
+        "window": [
+          0,
+          0,
+          2703,
+          1535
+        ],
+        "sensor_temperature_c": 48.92941176470588,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 5,
+        "temperature_min_c": 46.7333,
+        "temperature_max_c": 48.702,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22580,
+        "rss_max_kb": 22588,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "vin_statistics_before.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0        \n",
+    "vin_statistics_after.txt": "\n--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   213       0          212       0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    11481     11482     11479     11540    \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    12643     12669     12613     15266    \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          211       0          211       30.28  0         0x5e004003 0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     211      0         211      30.28 0        0x5e004003\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     210       209        210       30.28  1         0x5e001001 0        \n"
+  }
+]

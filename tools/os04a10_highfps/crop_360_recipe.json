@@ -1,0 +1,13 @@
+{
+  "kind": "reverse_engineered_crop_recipe",
+  "sensor": "OS04A10",
+  "width": 640,
+  "height": 360,
+  "hts": 732,
+  "vts": 410,
+  "sclk_mhz": 108,
+  "full_width": true,
+  "nominal_fps": 359.85605757696925,
+  "settings_sha256": "e469a1321125685357202e211cd52c685e92f9929a0de576079c92d01314949f",
+  "note": "Experimental center crop, not the vendor binning mode. Validation status is recorded separately in REVERSE_ENGINEERING.md."
+}

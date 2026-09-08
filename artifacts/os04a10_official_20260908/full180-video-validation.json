@@ -1,0 +1,52 @@
+{
+  "run": "/home/blade_master/pnx/maixcam2_dart/.maixpy/runs/os04a10-20260908-143038-ae4718",
+  "mode": "full180",
+  "capture": {
+    "requested_fps": 180,
+    "measurement": "VIN CH0 NV12 + asynchronous AX VENC",
+    "frames": 1801,
+    "monotonic_fps": 180.1299097,
+    "acquire_errors": 0,
+    "release_errors": 0,
+    "recording": true,
+    "encoded_submissions": 1801,
+    "encoded_packets": 1801,
+    "encoder_queue_dropped": 0,
+    "encoder_send_errors": 0,
+    "encoder_release_errors": 0,
+    "queue_depth": 4,
+    "sample_saved": true,
+    "exit_code": 0,
+    "interrupted": false
+  },
+  "encoded_index_rows": 1801,
+  "streams": {
+    "full180-realtime.mp4": {
+      "codec_name": "h264",
+      "width": 1344,
+      "height": 760,
+      "r_frame_rate": "180/1",
+      "avg_frame_rate": "180/1",
+      "duration": "10.005556",
+      "nb_read_frames": "1801"
+    },
+    "full180-slow30.mp4": {
+      "codec_name": "h264",
+      "width": 1344,
+      "height": 760,
+      "r_frame_rate": "30/1",
+      "avg_frame_rate": "30/1",
+      "duration": "60.033333",
+      "nb_read_frames": "1801"
+    }
+  },
+  "all_acquired_frames_preserved_and_sequence_contiguous": true,
+  "encoder_sequence_and_pts_match_acquisition": true,
+  "full_decode_passed": true,
+  "timing_note": "MP4 uses frame-index CFR playback at requested fps or 30fps; original acquisition sequence/PTS/monotonic timestamps are in source CSV. Slow clips contain the same recorded frames, without interpolation. A recording with missing frames must not be presented as continuous real-time footage.",
+  "sha256": {
+    "full180-realtime.mp4": "3dc1a2e6593cc16b3eeba61e7ee34f7c7b76ac8d413ad8b4a4000e222405da4e",
+    "full180-slow30.mp4": "e770eea1ebb2a28ef9b72f5aec5c2263025e2d7ee1fdc469b8059076e39758ce"
+  },
+  "decoded_pixels_match_source_in_order": true
+}

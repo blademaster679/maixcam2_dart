@@ -1,0 +1,213 @@
+{
+  "date": "2026-09-08",
+  "note": "Sequences include partial tables and duplicates across forks; counts are not distinct modes. Sampling bit semantics remain undocumented.",
+  "sources": [
+    {
+      "source": "https://raw.githubusercontent.com/LuckfoxTECH/luckfox-pico/main/sysdrv/source/kernel/drivers/media/i2c/os04a10.c",
+      "sha256": "e4295ba53f12b4592fe087e0f566537d51d4d5a96fb8d076bc7d2dcb181b4bd2",
+      "sequences": 9,
+      "explicit_output_sizes": [
+        [
+          2688,
+          1520
+        ]
+      ],
+      "sampling_values": {
+        "0x3814": [
+          1
+        ],
+        "0x3815": [
+          1
+        ],
+        "0x3816": [
+          1
+        ],
+        "0x3817": [
+          1
+        ]
+      }
+    },
+    {
+      "source": "https://raw.githubusercontent.com/OpenIPC/openingenic/master/kernel/sensors/t41/os04a10/os04a10.c",
+      "sha256": "bad0edff734494ee11aa326002999fcf988a0ef1df106767b2d65146f6469307",
+      "sequences": 2,
+      "explicit_output_sizes": [
+        [
+          2560,
+          1440
+        ],
+        [
+          2688,
+          1520
+        ]
+      ],
+      "sampling_values": {
+        "0x3814": [
+          1
+        ],
+        "0x3815": [
+          1
+        ],
+        "0x3816": [
+          1
+        ],
+        "0x3817": [
+          1
+        ]
+      }
+    },
+    {
+      "source": "https://raw.githubusercontent.com/rockchip-linux/kernel/develop-4.19/drivers/media/i2c/os04a10.c",
+      "sha256": "3dbc4d74604c02914328a0f2bef3ac7dab1b7afd603f31763816e74d4c29e063",
+      "sequences": 6,
+      "explicit_output_sizes": [],
+      "sampling_values": {
+        "0x3814": [
+          1
+        ],
+        "0x3815": [
+          1
+        ],
+        "0x3816": [
+          1
+        ],
+        "0x3817": [
+          1
+        ]
+      }
+    },
+    {
+      "source": "https://raw.githubusercontent.com/rockchip-linux/kernel/develop-5.10/drivers/media/i2c/os04a10.c",
+      "sha256": "7d028f2f2fd2b0f5cb21b718dc40fb7ab9202f2226bcde3fc164fb8c7ebae4a0",
+      "sequences": 9,
+      "explicit_output_sizes": [
+        [
+          2688,
+          1520
+        ]
+      ],
+      "sampling_values": {
+        "0x3814": [
+          1
+        ],
+        "0x3815": [
+          1
+        ],
+        "0x3816": [
+          1
+        ],
+        "0x3817": [
+          1
+        ]
+      }
+    },
+    {
+      "source": "https://raw.githubusercontent.com/rockchip-linux/kernel/develop-6.1/drivers/media/i2c/os04a10.c",
+      "sha256": "f6ea165e0cf2b28e99c6ab207f396dccc4bd30a1a04bc202f763477a137f7bf4",
+      "sequences": 9,
+      "explicit_output_sizes": [
+        [
+          2688,
+          1520
+        ]
+      ],
+      "sampling_values": {
+        "0x3814": [
+          1
+        ],
+        "0x3815": [
+          1
+        ],
+        "0x3816": [
+          1
+        ],
+        "0x3817": [
+          1
+        ]
+      }
+    },
+    {
+      "source": "https://raw.githubusercontent.com/AXERA-TECH/ax620e_bsp_sdk/main/msp/out/arm64_glibc/lib/libsns_os04a10.a",
+      "sha256": "b39cf3eb485c68229d687b9e171eb7766a168398eb2952544849e57ae03ff3fb",
+      "sequences": 13,
+      "explicit_output_sizes": [
+        [
+          2688,
+          1520
+        ]
+      ],
+      "sampling_values": {
+        "0x3814": [
+          1
+        ],
+        "0x3815": [
+          1
+        ],
+        "0x3816": [
+          1
+        ],
+        "0x3817": [
+          1
+        ]
+      }
+    },
+    {
+      "source": "/home/blade_master/maix/MaixCDK/components/3rd_party/sophgo-middleware/sophgo-middleware/v2/component/isp/sensor/sg200x/ov_os04a10/os04a10_sensor_ctl.c",
+      "sha256": "add48ffc516c4adf61e0402685c8ea8a1bd55b7fc4f525684fc718ca03126c84",
+      "sequences": 3,
+      "explicit_output_sizes": [
+        [
+          1280,
+          720
+        ],
+        [
+          2688,
+          1520
+        ]
+      ],
+      "sampling_values": {
+        "0x3814": [
+          1
+        ],
+        "0x3815": [
+          1
+        ],
+        "0x3816": [
+          1
+        ],
+        "0x3817": [
+          1
+        ]
+      }
+    },
+    {
+      "source": "/home/blade_master/maix/MaixCDK/dl/extracted/maixcam2_msp_srcs/maixcam2_msp_arm64_glibc_v3.0.0_20250319114413/component/isp_proton/sensor/ov_os04a10/os04a10_settings.h",
+      "sha256": "e469a1321125685357202e211cd52c685e92f9929a0de576079c92d01314949f",
+      "sequences": 25,
+      "explicit_output_sizes": [
+        [
+          640,
+          480
+        ],
+        [
+          2688,
+          1520
+        ]
+      ],
+      "sampling_values": {
+        "0x3814": [
+          1
+        ],
+        "0x3815": [
+          1
+        ],
+        "0x3816": [
+          1
+        ],
+        "0x3817": [
+          1
+        ]
+      }
+    }
+  ]
+}

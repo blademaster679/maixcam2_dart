@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "sampling_hypothesis_record",
+  "id": "h1-3814-bit1",
+  "status": "hypothesis_only",
+  "ready_for_device": false,
+  "sensor": "OS04A10",
+  "base": {
+    "mode": "native-full-array-30fps",
+    "settings_sha256": "e469a1321125685357202e211cd52c685e92f9929a0de576079c92d01314949f",
+    "run_evidence": "tools/os04a10_highfps/FULL_FOV.md"
+  },
+  "evidence_level": "structural_guess",
+  "hypothesis": "0x3814 bit1 may affect spatial sampling; axis, coding and companion enable bits are unverified",
+  "proposed_masked_writes": [
+    {
+      "address": "0x3814",
+      "expected_old": "0x01",
+      "mask": "0x02",
+      "value": "0x02",
+      "derived_new": "0x03",
+      "phase": "standby_after_baseline",
+      "delay_us": 0
+    }
+  ],
+  "companions": [],
+  "preserve": ["full_array_window", "pll", "hts_vts", "hdr_off", "lane_map", "analog_controls", "mirror_flip"],
+  "controls": ["baseline_same_scene", "same_output_geometry_without_sampling_patch", "baseline_after_candidate"],
+  "predictions": {
+    "support": "Spatial mapping differs from geometry-only control in a repeatable axis-dependent way",
+    "inconclusive": "Matching register readback without changed spatial mapping",
+    "reject_current_combination": "No valid frames or reproducible corruption after the defined initialization"
+  },
+  "experiment_limits": {
+    "warmup_seconds_max": 2,
+    "measurement_seconds": 3,
+    "consecutive_get_timeouts_max": 5,
+    "get_timeout_ms": 200,
+    "temperature_stop_c": 80,
+    "restore_on_error": true
+  },
+  "unresolved_before_execution": [
+    "Implement the separate hypothesis builder and runner path",
+    "Choose and record initial output geometry, Bayer hypothesis and matching receiver/pool configuration",
+    "Save current device baseline and confirm candidate address old value",
+    "Expand and review complete ordered initialization and effective diff"
+  ],
+  "observations": {
+    "readback_ok": null,
+    "frames_received": null,
+    "spatial_sampling_observed": null,
+    "full_fov_verified": null,
+    "timing_verified": null,
+    "raw_stable": null,
+    "nv21_stable": null,
+    "rollback_ok": null,
+    "evidence_directory": null
+  }
+}

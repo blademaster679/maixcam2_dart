@@ -1,0 +1,18 @@
+{
+  "status": "missing_vendor_sequence",
+  "sensor": "OS04A10",
+  "width": 640,
+  "height": 360,
+  "fps": 360,
+  "raw_bits": 10,
+  "lanes": 4,
+  "readout": "2x2-binning-crop",
+  "capability_source": "OS04A10 rev 1B preliminary specification v1.0, page 59, table 5-1",
+  "missing": [
+    "Full 640x360@360 Linear RAW10 initialization sequence and delays",
+    "Mode-specific binning/analog/blanking settings",
+    "HTS, VTS, minimum VTS and exposure update constraints",
+    "Verified PLL/SCLK/MIPI clock and receiver configuration",
+    "Bayer phase and module revision compatibility"
+  ]
+}

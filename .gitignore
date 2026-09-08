@@ -42,6 +42,21 @@ CMakeUserPresets.json
 /recordings/**/results*/
 /recordings/**/TEST_REPORT*.md
 
+# Large/local capture artifacts. Keep reports, summaries, checksums and small
+# report figures versionable; see artifacts/README.md for separate storage.
+/artifacts/**/*.mp4
+/artifacts/**/*.avi
+/artifacts/**/*.mov
+/artifacts/**/*.mkv
+/artifacts/**/*.h264
+/artifacts/**/*.h265
+/artifacts/**/*.raw
+/artifacts/**/*.nv12
+/artifacts/**/*.nv21
+/artifacts/**/*.zip
+/artifacts/**/*.tar.gz
+/artifacts/**/*.tgz
+
 # Private/large training data and model artifacts. Keep contracts/templates.
 /datasets/
 /models/runtime/*
@@ -52,6 +67,7 @@ CMakeUserPresets.json
 *.tar
 
 # Runtime/debug output
+/.maixpy/
 *.log
 *.err
 /reports/*.json

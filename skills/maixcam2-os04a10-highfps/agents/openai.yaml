@@ -1,0 +1,4 @@
+interface:
+  display_name: "MaixCAM2 OS04A10 高速采集开发"
+  short_description: "核实并开发 OS04A10 的 360p@360fps 模式，验证真实帧率与稳定性"
+  default_prompt: "使用 $maixcam2-os04a10-highfps，基于当前设备和源码先完成 OS04A10 640×360@360fps 的可行性核验与驱动开发计划。"

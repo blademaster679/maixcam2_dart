@@ -1,0 +1,1613 @@
+[
+  {
+    "label": "原始驱动基线",
+    "run": ".maixpy/runs/os04a10-20260908-131934-3789bf",
+    "capture": {
+      "requested_fps": 30,
+      "measurement": "VIN IFE RAW",
+      "frames": 151,
+      "monotonic_fps": 30.28131951,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {},
+    "exit_code": 0
+  },
+  {
+    "label": "RAW 全视野60",
+    "run": ".maixpy/runs/os04a10-20260908-132434-648fc4",
+    "capture": {
+      "requested_fps": 60,
+      "measurement": "VIN IFE RAW",
+      "frames": 300,
+      "monotonic_fps": 60.01687699,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {},
+    "exit_code": 0
+  },
+  {
+    "label": "RAW 全视野120",
+    "run": ".maixpy/runs/os04a10-20260908-132539-c56481",
+    "capture": {
+      "requested_fps": 120,
+      "measurement": "VIN IFE RAW",
+      "frames": 600,
+      "monotonic_fps": 119.9441008,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 600,
+      "monotonic_fps": 119.94410084275248,
+      "dimensions": [
+        [
+          1344,
+          760
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 8337,
+      "pts_ticks_per_monotonic_second": 999998.9987971549,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 8338.0,
+        "p95": 9063.2,
+        "p99": 9162.06,
+        "max": 10046
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 72000000.0,
+        "hts": 732,
+        "vts": 820,
+        "timing_fps_inferred": 119.95201919232306,
+        "exposure_lines": 812,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 72000000.0,
+        "hts": 732,
+        "vts": 820,
+        "timing_fps_inferred": 119.95201919232306,
+        "exposure_lines": 811,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 45.29019607843137,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 5,
+        "temperature_min_c": 42.7922,
+        "temperature_max_c": 44.9882,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22520,
+        "rss_max_kb": 22544,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "RAW 全视野180",
+    "run": ".maixpy/runs/os04a10-20260908-132604-fddb06",
+    "capture": {
+      "requested_fps": 180,
+      "measurement": "VIN IFE RAW",
+      "frames": 5404,
+      "monotonic_fps": 180.1404535,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 5404,
+      "monotonic_fps": 180.14045354118358,
+      "dimensions": [
+        [
+          1344,
+          760
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 5551,
+      "pts_ticks_per_monotonic_second": 1000024.9722746072,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 5551.0,
+        "p95": 6007.0,
+        "p99": 6362.919999999998,
+        "max": 11264
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 2,
+      "window_fps_10s": [
+        180.2,
+        180.1
+      ],
+      "min_window_fps_10s": 180.1,
+      "windows_below_359fps": [
+        0,
+        1
+      ],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 811,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 810,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 52.568627450980394,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 30,
+        "temperature_min_c": 44.6078,
+        "temperature_max_c": 52.4902,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22496,
+        "rss_max_kb": 22740,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "RAW 裁剪240",
+    "run": ".maixpy/runs/os04a10-20260908-132654-277808",
+    "capture": {
+      "requested_fps": 240,
+      "measurement": "VIN IFE RAW",
+      "frames": 1199,
+      "monotonic_fps": 239.8889703,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 16,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 1199,
+      "monotonic_fps": 239.88897025356744,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 4169.0,
+      "pts_ticks_per_monotonic_second": 1000002.8033769479,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 4172.0,
+        "p95": 4289.299999999999,
+        "p99": 4751.0,
+        "max": 7105
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 615,
+        "timing_fps_inferred": 239.90403838464616,
+        "exposure_lines": 607,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 615,
+        "timing_fps_inferred": 239.90403838464616,
+        "exposure_lines": 606,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 50.294117647058826,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 5,
+        "temperature_min_c": 48.0941,
+        "temperature_max_c": 49.9922,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22528,
+        "rss_max_kb": 22576,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "RAW 裁剪360",
+    "run": ".maixpy/runs/os04a10-20260908-132719-91f593",
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN IFE RAW",
+      "frames": 10795,
+      "monotonic_fps": 359.8324929,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 16,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 10795,
+      "monotonic_fps": 359.83249287410655,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779.0,
+      "pts_ticks_per_monotonic_second": 1000000.2333544053,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2767.0,
+        "p95": 3407.0,
+        "p99": 3450.0,
+        "max": 13910
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 2,
+      "window_fps_10s": [
+        359.9,
+        359.8
+      ],
+      "min_window_fps_10s": 359.8,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 54.384313725490195,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 30,
+        "temperature_min_c": 47.8706,
+        "temperature_max_c": 54.3098,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22528,
+        "rss_max_kb": 23016,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "NV21 全视野180短测",
+    "run": ".maixpy/runs/os04a10-20260908-132809-4855af",
+    "capture": {
+      "requested_fps": 180,
+      "measurement": "VIN CH0 NV21",
+      "frames": 5404,
+      "monotonic_fps": 180.1359131,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 5404,
+      "monotonic_fps": 180.135913096541,
+      "dimensions": [
+        [
+          1344,
+          760
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 5551,
+      "pts_ticks_per_monotonic_second": 1000000.2333798615,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 5551.0,
+        "p95": 5651.0,
+        "p99": 5958.8399999999965,
+        "max": 9904
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 2,
+      "window_fps_10s": [
+        180.2,
+        180.1
+      ],
+      "min_window_fps_10s": 180.1,
+      "windows_below_359fps": [
+        0,
+        1
+      ],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 811,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 810,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 56.509803921568626,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 30,
+        "temperature_min_c": 50.3686,
+        "temperature_max_c": 56.4314,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22516,
+        "rss_max_kb": 22760,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "NV21 裁剪360短测",
+    "run": ".maixpy/runs/os04a10-20260908-132859-a53333",
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 10795,
+      "monotonic_fps": 359.8298779,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 10795,
+      "monotonic_fps": 359.82987787419285,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779.0,
+      "pts_ticks_per_monotonic_second": 999993.1994353265,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2751.0,
+        "p95": 2937.0,
+        "p99": 3076.0699999999997,
+        "max": 9203
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 2,
+      "window_fps_10s": [
+        359.9,
+        359.8
+      ],
+      "min_window_fps_10s": 359.8,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 56.96470588235294,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 30,
+        "temperature_min_c": 51.6588,
+        "temperature_max_c": 56.9647,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22528,
+        "rss_max_kb": 23016,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "NV21 全视野180长测",
+    "run": ".maixpy/runs/os04a10-20260908-135758-4ac11d",
+    "capture": {
+      "requested_fps": 180,
+      "measurement": "VIN CH0 NV21",
+      "frames": 324244,
+      "monotonic_fps": 180.1357598,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 324244,
+      "monotonic_fps": 180.13575977260456,
+      "dimensions": [
+        [
+          1344,
+          760
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 5551,
+      "pts_ticks_per_monotonic_second": 999999.8688883359,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 5551.0,
+        "p95": 5684.0,
+        "p99": 5967.0,
+        "max": 15210
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 179,
+      "window_fps_10s": [
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.1,
+        180.2,
+        180.1,
+        180.2
+      ],
+      "min_window_fps_10s": 180.1,
+      "windows_below_359fps": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178
+      ],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 811,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 810,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 68.78823529411764,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1792,
+        "temperature_min_c": 48.4,
+        "temperature_max_c": 68.7882,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22516,
+        "rss_max_kb": 37748,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "NV21 裁剪360长测（失败）",
+    "run": ".maixpy/runs/os04a10-20260908-143631-a69eae",
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 10921,
+      "monotonic_fps": 359.6807971,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 10,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 10921,
+      "monotonic_fps": 359.6807971264271,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 1,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779.0,
+      "pts_ticks_per_monotonic_second": 999670.8196074651,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2752.0,
+        "p95": 2946.0,
+        "p99": 3117.8099999999995,
+        "max": 15531
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 3,
+      "window_fps_10s": [
+        359.9,
+        359.8,
+        359.9
+      ],
+      "min_window_fps_10s": 359.8,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 58.09803921568628,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 31,
+        "temperature_min_c": 52.1098,
+        "temperature_max_c": 58.0235,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22540,
+        "rss_max_kb": 23044,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 10
+  },
+  {
+    "label": "Camera全视野180，缓冲8",
+    "run": ".maixpy/runs/os04a10-20260908-134818-d2b90a",
+    "capture": {
+      "requested_fps": 180,
+      "measurement": "Camera::pop IVPS NV21",
+      "frames": 5398,
+      "monotonic_fps": 179.9026925,
+      "acquire_errors": 0,
+      "release_errors": null,
+      "release_note": "RAII release return unavailable",
+      "sequence_gaps": 7,
+      "duplicates": 0,
+      "backwards": 0,
+      "recording": false,
+      "encoded_submissions": 0,
+      "encoder_queue_dropped": 0,
+      "exit_code": 10,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 5398,
+      "monotonic_fps": 179.90269254363173,
+      "dimensions": [
+        [
+          1344,
+          760
+        ]
+      ],
+      "sequence_gaps": 7,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 5551,
+      "pts_ticks_per_monotonic_second": 1000000.4666736512,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 5550.0,
+        "p95": 5721.0,
+        "p99": 5815.04,
+        "max": 16352
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 2,
+      "window_fps_10s": [
+        180.1,
+        179.8
+      ],
+      "min_window_fps_10s": 179.8,
+      "windows_below_359fps": [
+        0,
+        1
+      ],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 811,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 810,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 53.325490196078434,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 30,
+        "temperature_min_c": 45.7451,
+        "temperature_max_c": 53.1725,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22756,
+        "rss_max_kb": 22988,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 10
+  },
+  {
+    "label": "Camera裁剪360，缓冲8",
+    "run": ".maixpy/runs/os04a10-20260908-134910-4cde6f",
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "Camera::pop IVPS NV21",
+      "frames": 10766,
+      "monotonic_fps": 358.8327592,
+      "acquire_errors": 0,
+      "release_errors": null,
+      "release_note": "RAII release return unavailable",
+      "sequence_gaps": 30,
+      "duplicates": 0,
+      "backwards": 0,
+      "recording": false,
+      "encoded_submissions": 0,
+      "encoder_queue_dropped": 0,
+      "exit_code": 10,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 10766,
+      "monotonic_fps": 358.8327592009186,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 30,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 1000000.9999984,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2722.0,
+        "p95": 3511.0,
+        "p99": 3568.0,
+        "max": 16764
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 3,
+      "window_fps_10s": [
+        359.2,
+        357.9,
+        359.4
+      ],
+      "min_window_fps_10s": 357.9,
+      "windows_below_359fps": [
+        1
+      ],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 43.70196078431373,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 55.44705882352941,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 30,
+        "temperature_min_c": 49.9922,
+        "temperature_max_c": 55.2941,
+        "mipi_error_max": 0,
+        "rss_min_kb": 22756,
+        "rss_max_kb": 23244,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 10
+  },
+  {
+    "label": "Camera切换及重开",
+    "run": ".maixpy/runs/os04a10-20260908-135002-b1d499",
+    "capture": {
+      "requested_fps": 180,
+      "measurement": "Camera::pop IVPS NV21",
+      "frames": 901,
+      "monotonic_fps": 180.1352455,
+      "acquire_errors": 0,
+      "release_errors": null,
+      "release_note": "RAII release return unavailable",
+      "sequence_gaps": 0,
+      "duplicates": 0,
+      "backwards": 0,
+      "recording": false,
+      "encoded_submissions": 0,
+      "encoder_queue_dropped": 0,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 901,
+      "monotonic_fps": 180.1352455423532,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 5551.0,
+      "pts_ticks_per_monotonic_second": 999996.597445362,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 5552.0,
+        "p95": 5655.1,
+        "p99": 5719.0,
+        "max": 8379
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 810,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 48.92941176470588,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 810,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 54.384313725490195,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 5,
+        "temperature_min_c": 53.0196,
+        "temperature_max_c": 54.1569,
+        "mipi_error_max": 0,
+        "rss_min_kb": 25104,
+        "rss_max_kb": 25104,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "180fps硬件录像",
+    "run": ".maixpy/runs/os04a10-20260908-143038-ae4718",
+    "capture": {
+      "requested_fps": 180,
+      "measurement": "VIN CH0 NV12 + asynchronous AX VENC",
+      "frames": 1801,
+      "monotonic_fps": 180.1299097,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "recording": true,
+      "encoded_submissions": 1801,
+      "encoded_packets": 1801,
+      "encoder_queue_dropped": 0,
+      "encoder_send_errors": 0,
+      "encoder_release_errors": 0,
+      "queue_depth": 4,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 1801,
+      "monotonic_fps": 180.12990969086906,
+      "dimensions": [
+        [
+          1344,
+          760
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 5551.0,
+      "pts_ticks_per_monotonic_second": 999967.5766162557,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 5555.0,
+        "p95": 6046.05,
+        "p99": 6710.379999999999,
+        "max": 10110
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 811,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 819,
+        "timing_fps_inferred": 180.1477211313277,
+        "exposure_lines": 810,
+        "width": 1344,
+        "height": 760,
+        "window": [
+          0,
+          4,
+          2703,
+          1531
+        ],
+        "sensor_temperature_c": 65.60392156862746,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 10,
+        "temperature_min_c": 65.0,
+        "temperature_max_c": 65.5294,
+        "mipi_error_max": 0,
+        "rss_min_kb": 23456,
+        "rss_max_kb": 23560,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  },
+  {
+    "label": "360fps原始帧录像",
+    "run": ".maixpy/runs/os04a10-20260908-143959-f2caa3",
+    "capture": {
+      "requested_fps": 360,
+      "measurement": "VIN CH0 NV21",
+      "frames": 360,
+      "monotonic_fps": 359.7410666,
+      "acquire_errors": 0,
+      "release_errors": 0,
+      "queue_depth": 8,
+      "burst_recording": true,
+      "burst_frames": 360,
+      "burst_frame_bytes": 345600,
+      "sample_saved": true,
+      "exit_code": 0,
+      "interrupted": false
+    },
+    "analysis": {
+      "frames": 360,
+      "monotonic_fps": 359.7410665971902,
+      "dimensions": [
+        [
+          640,
+          360
+        ]
+      ],
+      "sequence_gaps": 0,
+      "sequence_duplicates": 0,
+      "sequence_backwards": 0,
+      "pts_nonincreasing": 0,
+      "pts_delta_raw_median": 2779,
+      "pts_ticks_per_monotonic_second": 999746.477744153,
+      "pts_note": "SDK Payload TimeStamp; unit and capture phase undocumented in local header. No hardware FPS inferred.",
+      "interval_us": {
+        "p50": 2749.0,
+        "p95": 3113.5,
+        "p99": 3552.7000000000007,
+        "max": 4597
+      },
+      "sequence_note": "SDK input frame sequence number; reset/wrap not normalized.",
+      "complete_10s_windows": 0,
+      "window_fps_10s": [],
+      "min_window_fps_10s": null,
+      "windows_below_359fps": [],
+      "window_note": "Aligned to first received frame; trailing incomplete window excluded.",
+      "readback_before": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 402,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 0.0,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "readback_after": {
+        "sclk_hz_inferred_at_24mhz_xclk": 108000000.0,
+        "hts": 732,
+        "vts": 410,
+        "timing_fps_inferred": 359.85605757696925,
+        "exposure_lines": 401,
+        "width": 640,
+        "height": 360,
+        "window": [
+          704,
+          404,
+          1999,
+          1131
+        ],
+        "sensor_temperature_c": 47.870588235294115,
+        "temperature_note": "Datasheet section 3.8; internal sensor reading, not an external calibrated measurement"
+      },
+      "health": {
+        "samples": 1,
+        "temperature_min_c": 47.1098,
+        "temperature_max_c": 47.1098,
+        "mipi_error_max": 0,
+        "rss_min_kb": 149104,
+        "rss_max_kb": 149104,
+        "note": "RSS includes deliberately retained per-frame metadata; unavailable temperature sentinel is -999."
+      }
+    },
+    "exit_code": 0
+  }
+]

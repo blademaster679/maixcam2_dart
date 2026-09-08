@@ -1,0 +1,4 @@
+interface:
+  display_name: "OS04A10 降采样逆向实验"
+  short_description: "提出并实机检验降采样寄存器假设，逐步形成全视野高速采集驱动"
+  default_prompt: "使用 $os04a10-subsampling-reverse，结合现有资料提出可证伪的降采样寄存器候选，通过有界试写、视野验证和回退逐步开发 OS04A10 全视野高速驱动。"
