@@ -425,7 +425,13 @@ int main(int argc, char **argv) {
                     if (health_records.size()%10==0) {
                         std::ofstream progress("progress.json");
                         progress << "{\"elapsed_s\":" << state.elapsed_us/1e6
-                            << ",\"frames\":" << records.size() << ",\"temperature_c\":" << state.temperature
+                            << ",\"frames\":"
+#ifdef DART_BUSINESS_CAPTURE
+                            << business_frames
+#else
+                            << records.size()
+#endif
+                            << ",\"temperature_c\":" << state.temperature
                             << ",\"mipi_errors\":" << state.mipi_errors << ",\"rss_kb\":" << state.rss_kb << "}\n";
                     }
                 }
