@@ -1,8 +1,12 @@
 #include "dart/green_detector.hpp"
 #include "dart/target_json.hpp"
 #include "dart/visual_motion.hpp"
+#include "dart/nv21_pipeline.hpp"
 
 #include <cmath>
+#include <atomic>
+#include <chrono>
+#include <thread>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -594,6 +598,17 @@ void test_rotated_armor_and_planar_pose()
               rotated_target.safe_for_control,
           "three armor observations begin the bounded fused aim transition");
 
+    auto source_config=detector_config;
+    source_config.camera_model.principal_x+=400;source_config.camera_model.principal_y+=200;
+    dart::GreenLightDetector source_detector(source_config,armor_config);
+    dart::TargetEstimate source_target;
+    for(int n=0;n<3;++n) source_target=source_detector.process_region(
+        rotated,{400,200,rotated.width(),rotated.height()},1344,760,1000000+n*16667);
+    check(source_target.armor.valid &&
+          std::fabs(source_target.armor.center.x-rotated_target.armor.center.x-400)<0.1F &&
+          std::fabs(source_target.armor.left_bar.top.y-rotated_target.armor.left_bar.top.y-200)<0.1F,
+          "rotated armor center and endpoints map from ROI to source coordinates");
+
     dart::TargetGeometryConfig geometry;
     geometry.pose_enabled = true;
     geometry.bar_separation_m = 0.12F;
@@ -843,6 +858,111 @@ void test_configuration()
     check(threw, "unknown configuration keys are rejected");
 }
 
+void test_nv21_and_source_roi()
+{
+    for (const auto &dimensions : {std::pair<int,int>{480,360}, {640,480}, {1344,760}}) {
+        const int w=dimensions.first,h=dimensions.second,stride=w+16;
+        std::vector<uint8_t> y(stride*h,16), vu(stride*h/2,128);
+        const int px=w-34,py=h-46;
+        for(int yy=py;yy<py+8;++yy) for(int xx=px;xx<px+8;++xx) y[yy*stride+xx]=145;
+        for(int yy=py/2;yy<(py+8)/2;++yy) for(int xx=px;xx<px+8;xx+=2) {
+            vu[yy*stride+xx]=34;vu[yy*stride+xx+1]=54;
+        }
+        dart::Nv21View view{y.data(),vu.data(),w,h,stride,stride};
+        auto proposals=dart::nv21_green_proposals(view);
+        check(!proposals.empty(),"NV21 full field finds off-center green");
+        if(proposals.empty()) continue;
+        check(std::hypot(proposals[0].x-px,proposals[0].y-py)<12,"proposal in original pixels");
+        auto r=dart::source_roi(proposals[0].x,proposals[0].y,96,w,h);
+        auto image=dart::nv21_rgb_region(view,r);
+        const auto*rgb=static_cast<const uint8_t*>(image->data());
+        const int offset=((py-r.y)*r.width+px-r.x)*3;
+        check(rgb[offset+1]>240 && rgb[offset]<10 && rgb[offset+2]<10,"NV21 VU and padded stride conversion");
+        dart::DetectorConfig c; c.enable_capture_cone=false;
+        c.camera_model={static_cast<float>(w),static_cast<float>(w),w/2.0F,h/2.0F};
+        c.confirm_hits=1; c.confirm_window=1;
+        dart::GreenLightDetector detector(c);
+        auto target=detector.process_region(*image,r,w,h,10000);
+        check(target.green.valid,"existing detector observes original-resolution ROI");
+        check(std::hypot(target.green.center_x-(px+3.5F),target.green.center_y-(py+3.5F))<3,"ROI localization translated to source");
+        auto snapshot=detector.tracker_snapshot();
+        auto local=snapshot.roi_view(r.x,r.y);
+        check(std::fabs(local.predicted_x()+r.x-snapshot.predicted_x())<0.01,"tracker normalized state survives ROI origin");
+        auto predicted=snapshot.update(nullptr,20000,c.camera_model,false);
+        check(predicted.measurement_age_us==10000 && predicted.missed_frames==0,"scheduled control prediction preserves observation miss budget");
+        dart::invalidate_uncalibrated(target);
+        check(!target.safe_for_control && !target.angles_valid && !target.pose.valid,"uncalibrated ROI is fail closed");
+    }
+    const auto c=dart::load_application_config(std::string(TEST_PROJECT_ROOT)+"/config/green_detector_full180.conf");
+    check(c.camera.width==1344 && c.camera.height==760 && c.camera.fps==180 && !c.npu.enabled && !c.target_geometry.pose_enabled,"independent full180 config");
+}
+
+void test_pipeline_shutdown_and_map_failure()
+{
+    auto c=dart::load_application_config(std::string(TEST_PROJECT_ROOT)+"/config/green_detector_full180.conf");
+    struct Frame : dart::Nv21Frame {
+        std::atomic<int> &released;
+        bool fail;
+        std::vector<uint8_t> pixels;
+        Frame(std::atomic<int>&r,bool f):released(r),fail(f),pixels(1344*760*3/2,128){}
+        ~Frame() override { ++released; }
+        dart::Nv21View map() override {
+            if(fail) throw std::runtime_error("injected DMA map failure");
+            return {pixels.data(),pixels.data()+1344*760,1344,760,1344,1344};
+        }
+    };
+    std::atomic<int> released{0};
+    {
+        dart::HighFpsPipeline pipeline(c);
+        auto f=std::make_shared<Frame>(released,true);
+        f->metadata={1,1,static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count())};
+        pipeline.submit(std::move(f));
+        for(int i=0;i<100 && !pipeline.failed();++i) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        check(pipeline.failed(),"map exception propagated without terminating process");
+        pipeline.finish(); pipeline.finish();
+    }
+    check(released==1,"failed mapping frame released exactly once after joined cleanup");
+    {
+        dart::HighFpsPipeline pipeline(c,false,true);
+        for(int n=0;n<5;++n) {
+            auto f=std::make_shared<Frame>(released,false);
+            const auto stamp=static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count());
+            f->metadata={static_cast<uint64_t>(n+1),stamp,stamp};
+            pipeline.submit(std::move(f));
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
+        pipeline.finish();check(!pipeline.failed(),"async motion and control pipeline completes real synthetic image work");
+    }
+    check(released==6,"all submitted frames released after vision and motion join");
+    {
+        dart::HighFpsPipeline empty(c); empty.finish();
+        check(!empty.failed(),"empty pipeline wakes and joins cleanly");
+    }
+}
+
+void test_integral_peak_equivalence()
+{
+    dart::DetectorConfig config;config.enable_capture_cone=false;
+    config.enable_legacy_lab_candidates=false;config.enable_sparse_component_search=true;
+    auto fast_config=config;fast_config.integral_peak_statistics=true;
+    dart::GreenLightDetector slow(config),fast(fast_config);
+    uint32_t noise=42;
+    for(int frame=0;frame<12;++frame) {
+        maix::image::Image image(128,128);
+        for(int y=0;y<128;++y) for(int x=0;x<128;++x) {
+            noise=1664525*noise+1013904223;
+            image.set_pixel(x,y,noise>>24,(noise>>16)&255,(noise>>8)&255);
+        }
+        slow.process(image,1000000+frame*11112);fast.process(image,1000000+frame*11112);
+        const auto &a=slow.last_candidates(), &b=fast.last_candidates();
+        check(a.size()==b.size(),"integral exact statistics preserve candidate count");
+        for(size_t n=0;n<std::min(a.size(),b.size());++n)
+            check(a[n].center_x==b[n].center_x && a[n].center_y==b[n].center_y && a[n].score==b[n].score,
+                  "integral exact statistics preserve coordinates and score without reducing hypothesis budget");
+    }
+}
+
 }  // namespace
 
 int main()
@@ -865,6 +985,9 @@ int main()
     test_npu_gate_and_control_prediction_budget();
     test_visual_motion_json_and_future_imu_interpolation();
     test_configuration();
+    test_nv21_and_source_roi();
+    test_pipeline_shutdown_and_map_failure();
+    test_integral_peak_equivalence();
 
     if (failures != 0) {
         std::cerr << failures << " test assertion(s) failed\n";

@@ -14,6 +14,7 @@ configure_file(../main/src/visual_motion.cpp "${HOST_SOURCE_DIR}/visual_motion.c
 
 add_executable(green_detector_tests
     test_green_detector.cpp
+    ../main/src/nv21_pipeline.cpp
     "${HOST_SOURCE_DIR}/config.cpp"
     "${HOST_SOURCE_DIR}/green_detector.cpp"
     "${HOST_SOURCE_DIR}/green_detector_core.cpp"
@@ -44,3 +45,15 @@ target_compile_features(async_frame_tests PRIVATE cxx_std_17)
 target_include_directories(async_frame_tests PRIVATE ../main/include)
 target_link_libraries(async_frame_tests PRIVATE Threads::Threads)
 add_test(NAME async_frame_tests COMMAND async_frame_tests)
+
+target_link_libraries(green_detector_tests PRIVATE Threads::Threads)
+
+# Optional vendor ABI mocks; no board libraries are linked or executed.
+set(AX_SDK_INCLUDE "" CACHE PATH "Device-matched MSP public include directory")
+if(AX_SDK_INCLUDE)
+    add_executable(vin_nv21_frame_tests test_vin_nv21_frame.cpp)
+    target_compile_features(vin_nv21_frame_tests PRIVATE cxx_std_17)
+    target_include_directories(vin_nv21_frame_tests PRIVATE stubs ../main/include "${AX_SDK_INCLUDE}")
+    target_link_libraries(vin_nv21_frame_tests PRIVATE Threads::Threads)
+    add_test(NAME vin_nv21_frame_tests COMMAND vin_nv21_frame_tests)
+endif()
