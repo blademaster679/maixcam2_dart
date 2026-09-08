@@ -373,12 +373,20 @@ struct DebugSettings {
     int max_saved_frames = 1000;
 };
 
+struct HighFpsScheduleConfig {
+    int green_hz = 90;
+    int armor_hz = 60;
+    int search_hz = 30;
+    int motion_hz = 30;
+};
+
 struct ApplicationConfig {
     DetectorConfig detector;
     ArmorConfig armor;
     TargetGeometryConfig target_geometry;
     NpuConfig npu;
     VisualMotionConfig visual_motion;
+    HighFpsScheduleConfig highfps;
     CameraSettings camera;
     DebugSettings debug;
 };

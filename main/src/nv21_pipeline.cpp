@@ -143,7 +143,11 @@ void HighFpsPipeline::finish() {
         <<",\"upstream_duplicate\":"<<sequence_.duplicate<<",\"upstream_reversed\":"<<sequence_.reversed
         <<",\"pts_nonincreasing\":"<<sequence_.pts_reversed<<",\"vision_frames\":"<<vision_count_
         <<",\"green_detection_calls\":"<<green_count_<<",\"armor_detection_calls\":"<<armor_count_
-        <<",\"control_outputs\":"<<output_count_<<",\"first_received_us\":"<<first_received_
+        <<",\"control_outputs\":"<<output_count_
+        <<",\"requested_green_hz\":"<<config_.highfps.green_hz
+        <<",\"requested_armor_hz\":"<<config_.highfps.armor_hz
+        <<",\"requested_search_hz\":"<<config_.highfps.search_hz
+        <<",\"requested_motion_hz\":"<<config_.highfps.motion_hz<<",\"first_received_us\":"<<first_received_
         <<",\"last_received_us\":"<<last_received_<<",\"failed\":"<<(failed_?"true":"false")<<"}\n";
     summary.flush(); if(!summary) failed_=true;
     finished_=true;
@@ -151,7 +155,8 @@ void HighFpsPipeline::finish() {
 void HighFpsPipeline::vision_loop() {
     try {
         GreenLightDetector detector(config_.detector,config_.armor,config_.target_geometry,config_.npu);
-        TimestampSchedule measurement(90), search(30), motion_schedule(30), armor_schedule(60);
+        TimestampSchedule measurement(config_.highfps.green_hz), search(config_.highfps.search_hz),
+            motion_schedule(config_.highfps.motion_hz), armor_schedule(config_.highfps.armor_hz);
         std::vector<Point2f> proposals;
         TargetEstimate last;
         uint64_t armor_source=0;

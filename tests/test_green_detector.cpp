@@ -856,6 +856,14 @@ void test_configuration()
     }
     std::filesystem::remove(invalid_path);
     check(threw, "unknown configuration keys are rejected");
+    for(const auto *bad:{"highfps.green_hz=0", "highfps.green_hz=181", "highfps.armor_hz=91", "highfps.search_hz=-1"}) {
+        {std::ofstream invalid(invalid_path);invalid<<bad<<'\n';}
+        bool rejected=false;
+        try {(void)dart::load_application_config(invalid_path.string());}
+        catch(const std::runtime_error&){rejected=true;}
+        std::filesystem::remove(invalid_path);
+        check(rejected,"invalid cadence is rejected before camera access");
+    }
 }
 
 void test_nv21_and_source_roi()
@@ -895,6 +903,13 @@ void test_nv21_and_source_roi()
     }
     const auto c=dart::load_application_config(std::string(TEST_PROJECT_ROOT)+"/config/green_detector_full180.conf");
     check(c.camera.width==1344 && c.camera.height==760 && c.camera.fps==180 && !c.npu.enabled && !c.target_geometry.pose_enabled,"independent full180 config");
+    check(c.highfps.green_hz==90 && c.highfps.armor_hz==60,"old full180 config retains verified cadence");
+    const auto fast=dart::load_application_config(std::string(TEST_PROJECT_ROOT)+"/config/green_detector_full180_fast.conf");
+    check(fast.highfps.green_hz==120 && fast.highfps.armor_hz==90 && fast.camera.fps==180 &&
+          !fast.npu.enabled && !fast.target_geometry.pose_enabled,"faster observation config preserves camera and model gates");
+    const auto maximum=dart::load_application_config(std::string(TEST_PROJECT_ROOT)+"/config/green_detector_full180_max.conf");
+    check(maximum.highfps.green_hz==180 && maximum.highfps.armor_hz==120 && maximum.camera.fps==180,
+          "maximum green cadence config remains a full180 camera profile");
 }
 
 void test_full180_fused_prediction()

@@ -140,6 +140,12 @@ void validate_lab(const std::string &name, const LabThreshold &threshold)
 
 void validate(const ApplicationConfig &config)
 {
+    const auto &h = config.highfps;
+    if (h.green_hz < 1 || h.green_hz > 180 || h.armor_hz < 1 ||
+        h.armor_hz > h.green_hz || h.search_hz < 1 || h.search_hz > h.green_hz ||
+        h.motion_hz < 1 || h.motion_hz > h.green_hz) {
+        throw std::runtime_error("invalid full180 stage rates");
+    }
     validate_lab("lab.core", config.detector.core_lab);
     validate_lab("lab.halo", config.detector.halo_lab);
 
@@ -473,6 +479,10 @@ ApplicationConfig load_application_config(const std::string &path)
         else if (key == "npu.min_roi_size_px") config.npu.min_roi_size_px = parse_int(key, value);
         else if (key == "npu.max_roi_size_px") config.npu.max_roi_size_px = parse_int(key, value);
         else if (key == "npu.roi_size_factor") config.npu.roi_size_factor = parse_float(key, value);
+        else if (key == "highfps.green_hz") config.highfps.green_hz = parse_int(key, value);
+        else if (key == "highfps.armor_hz") config.highfps.armor_hz = parse_int(key, value);
+        else if (key == "highfps.search_hz") config.highfps.search_hz = parse_int(key, value);
+        else if (key == "highfps.motion_hz") config.highfps.motion_hz = parse_int(key, value);
         else if (key == "visual_motion.enabled") config.visual_motion.enabled = parse_bool(key, value);
         else if (key == "visual_motion.tracking_only") config.visual_motion.tracking_only = parse_bool(key, value);
         else if (key == "visual_motion.interval_frames") config.visual_motion.interval_frames = parse_int(key, value);

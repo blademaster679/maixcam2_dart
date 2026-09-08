@@ -26,6 +26,12 @@ int main() {
     dart::TimestampSchedule rate(180); int count=0;
     for(uint64_t t=0;t<1000000;++t) if(rate.due(t)) ++count;
     CHECK(count==180); CHECK(rate.due(2000000)); CHECK(!rate.due(2000000));
+    dart::TimestampSchedule green120(120),armor90(90);int g=0,a=0;
+    for(uint64_t frame=0;frame<180;++frame) {
+        const auto stamp=(frame*1000000+179)/180;
+        if(green120.due(stamp)) {++g;if(armor90.due(stamp))++a;}
+    }
+    CHECK(g==120 && a==90); // nested cadence on ideal discrete 180Hz input
     bool threw=false; try{rate.due(1);}catch(const std::invalid_argument&){threw=true;} CHECK(threw);
     std::cout<<"async ownership, shutdown, concurrent replacement, sequence and timestamp tests passed\n";
 }
