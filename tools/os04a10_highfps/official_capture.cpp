@@ -17,6 +17,11 @@ static int OS04A10_HFR_WIDTH=1344, OS04A10_HFR_HEIGHT=760, OS04A10_HFR_FPS=60;
 #include <dlfcn.h>
 #include <sstream>
 #include <sched.h>
+#include <unistd.h>
+#ifdef DART_BUSINESS_CAPTURE
+#include "vin_nv21_frame.hpp"
+#include "vin_camera_settings.hpp"
+#endif
 
 using namespace maix::middleware::maixcam2;
 static volatile sig_atomic_t stopped = 0;
@@ -27,7 +32,7 @@ static uint64_t now_us() {
 }
 struct Record { uint64_t seq, pts, mono; uint32_t width, height, stride, size; int format;
     uint64_t get_us=0, hold_us=0, loop_gap_us=0; int cpu=-1; };
-struct Health { uint64_t elapsed_us; double temperature; long mipi_errors, rss_kb; uint64_t read_us=0; };
+struct Health { uint64_t elapsed_us; double temperature; long mipi_errors, rss_kb; uint64_t read_us=0; double process_cpu_s=-1; long cpu_khz=-1; };
 static Health health(AX_SENSOR_REGISTER_FUNC_T *sns, uint64_t elapsed) {
     Health h{elapsed, -999, -1, -1};
     AX_U32 hi=0,lo=0;
@@ -54,6 +59,21 @@ static Health health(AX_SENSOR_REGISTER_FUNC_T *sns, uint64_t elapsed) {
             std::istringstream values(line.substr(6)); values>>h.rss_kb;
         }
     }
+    std::ifstream cpu("/proc/self/stat");
+    std::getline(cpu,line);
+    const auto end=line.rfind(')');
+    if(end!=std::string::npos) {
+        std::istringstream fields(line.substr(end+2));std::string token;
+        uint64_t user=0,system=0;
+        for(int field=3;field<=15 && fields>>token;++field) {
+            if(field==14) user=std::stoull(token);
+            if(field==15) system=std::stoull(token);
+        }
+        const long ticks=sysconf(_SC_CLK_TCK);
+        if(ticks>0) h.process_cpu_s=static_cast<double>(user+system)/ticks;
+    }
+    std::ifstream frequency("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq");
+    frequency>>h.cpu_khz;
     return h;
 }
 static void save_proc(const char *suffix) {
@@ -79,6 +99,10 @@ static void save_registers(AX_SENSOR_REGISTER_FUNC_T *sns, const char *filename)
 }
 int main(int argc, char **argv) {
     int seconds = 10;
+#ifdef DART_BUSINESS_CAPTURE
+    const char *business_config = nullptr;
+    bool business_idle = false, business_stress = false;
+#endif
     bool hfr = true;
     bool sample_raw = false;
     bool nv21 = false;
@@ -97,6 +121,11 @@ int main(int argc, char **argv) {
             else if (mode=="crop360") { OS04A10_HFR_WIDTH=640; OS04A10_HFR_HEIGHT=360; OS04A10_HFR_FPS=360; }
             else return 2;
         }
+#ifdef DART_BUSINESS_CAPTURE
+        else if (!std::strcmp(argv[i], "--business-config") && i+1<argc) business_config=argv[++i];
+        else if (!std::strcmp(argv[i], "--business-idle")) business_idle=true;
+        else if (!std::strcmp(argv[i], "--business-stress")) business_stress=true;
+#endif
         else if (!std::strcmp(argv[i], "--hfr")) hfr = true;
         else if (!std::strcmp(argv[i], "--sample-raw")) sample_raw = true;
         else if (!std::strcmp(argv[i], "--sample-frame")) sample_raw = true;
@@ -121,6 +150,14 @@ int main(int argc, char **argv) {
             seconds = static_cast<int>(value);
         } else { std::cerr << "usage: capture [--hfr] [--seconds 1..1800] [--sensor-lib path] [--sample-frame] [--nv21]\n"; return 2; }
     }
+#ifdef DART_BUSINESS_CAPTURE
+    if(!business_config || !nv21 || OS04A10_HFR_WIDTH!=1344 || OS04A10_HFR_FPS!=180 || burst) return 2;
+    // Validate before touching the device. No inherited low-resolution calibration.
+    auto business_settings=dart::load_application_config(business_config);
+    if(business_settings.npu.enabled || business_settings.target_geometry.pose_enabled ||
+       business_settings.camera.width!=1344 || business_settings.camera.height!=760 ||
+       business_settings.camera.fps!=180 || business_settings.detector.classical_interval_frames!=1) return 2;
+#endif
     if (!queue_depth) queue_depth = nv21 ? 4 : 16;
     if (burst && (!nv21 || seconds!=1 || OS04A10_HFR_WIDTH!=640 || OS04A10_HFR_HEIGHT!=360)) {
         std::cerr << "Burst requires one second of 640x360 NV21\n"; return 2;
@@ -138,7 +175,14 @@ int main(int argc, char **argv) {
     std::signal(SIGINT, stop_handler);
     std::signal(SIGTERM, stop_handler);
     std::vector<Record> records;
+#ifdef DART_BUSINESS_CAPTURE
+    records.reserve(3); // first/last only: do not accumulate 30 minutes of metadata
+    uint64_t business_frames=0;
+    std::ofstream business_csv("frames.csv");
+    business_csv << "sequence,pts_raw,monotonic_us,width,height,stride,frame_bytes,format,get_us,hold_us,loop_gap_us,cpu\n";
+#else
     records.reserve(static_cast<size_t>(seconds + 1) * 400);
+#endif
     size_t acquire_errors = 0, release_errors = 0;
     int rc = 0;
     try {
@@ -229,6 +273,13 @@ int main(int argc, char **argv) {
         const unsigned expected_w = cam.tSnsAttr.nWidth, expected_h = cam.tSnsAttr.nHeight;
         module.unlock(AX_MOD_VI);
         if (vi.init() != maix::err::ERR_NONE) return 4;
+#ifdef DART_BUSINESS_CAPTURE
+        // Explicit teardown on exceptions too: do not rely on opaque VI destructor.
+        struct ViCleanup {
+            VI &vi; int &result; bool active=true;
+            ~ViCleanup() { if(active && vi.deinit()!=maix::err::ERR_NONE) result=5; }
+        } vi_cleanup{vi,rc};
+#endif
         if(itp_depth) {
             AX_U32 before=0,after=0;
             const int get_before=AX_VIN_GetPipeSourceDepth(0,AX_VIN_FRAME_SOURCE_ID_ITP,&before);
@@ -262,6 +313,11 @@ int main(int argc, char **argv) {
         if(realtime) { sched_param priority={};priority.sched_priority=10;
             if(sched_setscheduler(0,SCHED_FIFO,&priority)) throw std::runtime_error("Cannot set acquisition SCHED_FIFO"); }
         std::ofstream("scheduler.txt") << "policy=" << sched_getscheduler(0) << " realtime_requested=" << realtime << '\n';
+#ifdef DART_BUSINESS_CAPTURE
+        apply_vin_camera_settings(business_settings.camera,cam.ptSnsHdl[0]);
+        auto lease_stats=std::make_shared<VinLeaseStats>();
+        dart::HighFpsPipeline business(business_settings,business_idle,business_stress);
+#endif
         const auto start = now_us();
         const auto measurement_start = start + 2000000;
         const auto end = measurement_start + static_cast<uint64_t>(seconds) * 1000000;
@@ -273,6 +329,9 @@ int main(int argc, char **argv) {
         uint64_t previous_release=0;
         while (!stopped && !maix::app::need_exit() && now_us() < end) {
             AX_IMG_INFO_T img = {};
+#ifdef DART_BUSINESS_CAPTURE
+            auto business_frame=std::make_shared<VinNv21Frame>(lease_stats);
+#endif
             const auto get_start=now_us();
             const auto result = nv21 ? AX_VIN_GetYuvFrame(0, AX_VIN_CHN_ID_MAIN, &img, 200) :
                 AX_VIN_GetRawFrame(0, AX_VIN_PIPE_DUMP_NODE_IFE, AX_SNS_HDR_FRAME_L, &img, 200);
@@ -283,6 +342,9 @@ int main(int argc, char **argv) {
             }
             consecutive_errors = 0;
             const auto stamp = now_us();
+#ifdef DART_BUSINESS_CAPTURE
+            business_frame->adopt(img,stamp);
+#endif
             const auto &f = img.tFrameInfo.stVFrame;
             Record record{f.u64SeqNum, f.u64PTS, stamp, f.u32Width, f.u32Height,
                                 f.u32PicStride[0], f.u32FrameSize, static_cast<int>(f.enImgFormat)};
@@ -322,19 +384,36 @@ int main(int argc, char **argv) {
                     }
                 }
             }
+#ifdef DART_BUSINESS_CAPTURE
+            if(stamp>=measurement_start && stamp<end) business.submit(business_frame);
+            business_frame.reset(); // consumer may still own the VIN lease
+            const int released = lease_stats->release_errors ? -1 : 0;
+            if(business.failed() || lease_stats->map_errors) rc=11;
+#else
             const auto released = nv21 ? AX_VIN_ReleaseYuvFrame(0, AX_VIN_CHN_ID_MAIN, &img) :
                 AX_VIN_ReleaseRawFrame(0, AX_VIN_PIPE_DUMP_NODE_IFE, AX_SNS_HDR_FRAME_L, &img);
+#endif
             previous_release=now_us();record.hold_us=previous_release-stamp;
             if (released) { ++release_errors; rc = 5; break; }
             if (rc) break;
             if (record.width != expected_w || record.height != expected_h) { rc = 6; break; }
             if (nv21 && record.format != AX_FORMAT_YUV420_SEMIPLANAR_VU) { rc = 6; break; }
             if (stamp >= measurement_start && stamp < end) {
+#ifdef DART_BUSINESS_CAPTURE
+                ++business_frames;
+                business_csv << record.seq << ',' << record.pts << ',' << record.mono << ',' << record.width << ',' << record.height
+                    << ',' << record.stride << ',' << record.size << ',' << record.format << ',' << record.get_us << ',' << record.hold_us << ',' << record.loop_gap_us << ',' << record.cpu << '\n';
+                if(!business_csv) { rc=11; break; }
+#endif
                 if (records.size() == records.capacity()) { rc = 7; break; }
                 if (!records.empty() && (record.seq != records.back().seq+1 || record.pts<=records.back().pts)) {
                     records.push_back(record); rc=10; break;
                 }
+#ifdef DART_BUSINESS_CAPTURE
+                if(records.size()<2) records.push_back(record); else records.back()=record;
+#else
                 records.push_back(record);
+#endif
                 if (stamp>=next_health) {
                     const auto health_start=now_us();
                     auto state=health(cam.ptSnsHdl[0],stamp-measurement_start);
@@ -352,11 +431,22 @@ int main(int argc, char **argv) {
                 }
             }
         }
+#ifdef DART_BUSINESS_CAPTURE
+        business.finish(); // join readers and release every pending frame BEFORE VI teardown
+        std::ofstream("leases.json") << "{\"acquired\":"<<lease_stats->acquired
+            <<",\"released\":"<<lease_stats->released<<",\"release_errors\":"<<lease_stats->release_errors
+            <<",\"map_errors\":"<<lease_stats->map_errors<<"}\n";
+        if(business.failed() || lease_stats->acquired!=lease_stats->released ||
+           lease_stats->release_errors || lease_stats->map_errors) rc=11;
+#endif
         if(realtime) { sched_param priority={};if(sched_setscheduler(0,SCHED_OTHER,&priority)) rc=11; }
         save_proc("_after.txt");
         save_registers(cam.ptSnsHdl[0], "registers_after.csv");
         dump.bEnable = AX_FALSE;
         if (!nv21 && AX_VIN_SetPipeDumpAttr(0, AX_VIN_PIPE_DUMP_NODE_IFE, AX_VIN_DUMP_QUEUE_TYPE_DEV, &dump)) rc = 5;
+#ifdef DART_BUSINESS_CAPTURE
+        vi_cleanup.active=false;
+#endif
         if (vi.deinit() != maix::err::ERR_NONE) rc = 5;
         if (burst) {
             std::ofstream video("record.nv21",std::ios::binary);
@@ -364,23 +454,30 @@ int main(int argc, char **argv) {
             video.flush();
             if(!video || burst_frames!=records.size()) rc=11;
         }
+#ifdef DART_BUSINESS_CAPTURE
+        business_csv.flush(); if(!business_csv) rc=11;
+        const uint64_t total_frames=business_frames;
+#else
+        const uint64_t total_frames=records.size();
         std::ofstream csv("frames.csv");
         csv << "sequence,pts_raw,monotonic_us,width,height,stride,frame_bytes,format,get_us,hold_us,loop_gap_us,cpu\n";
         for (const auto &r : records)
             csv << r.seq << ',' << r.pts << ',' << r.mono << ',' << r.width << ',' << r.height
                 << ',' << r.stride << ',' << r.size << ',' << r.format << ',' << r.get_us << ',' << r.hold_us << ',' << r.loop_gap_us << ',' << r.cpu << '\n';
+        csv.flush(); if(!csv) rc=11;
+#endif
         std::ofstream health_csv("health.csv");
-        health_csv << "elapsed_us,temperature_c,mipi_errors,rss_kb,read_us\n";
+        health_csv << "elapsed_us,temperature_c,mipi_errors,rss_kb,read_us,process_cpu_s,cpu_khz\n";
         for (const auto &h : health_records)
-            health_csv << h.elapsed_us << ',' << h.temperature << ',' << h.mipi_errors << ',' << h.rss_kb << ',' << h.read_us << '\n';
-        csv.flush(); health_csv.flush();
-        if (!csv || !health_csv) rc=11;
+            health_csv << h.elapsed_us << ',' << h.temperature << ',' << h.mipi_errors << ',' << h.rss_kb << ',' << h.read_us << ',' << h.process_cpu_s << ',' << h.cpu_khz << '\n';
+        health_csv.flush();
+        if (!health_csv) rc=11;
         if (records.size() < 2 && !rc) rc = 5;
         const double fps = records.size() > 1 ?
-            (records.size()-1) * 1000000.0 / (records.back().mono - records.front().mono) : 0;
+            (total_frames-1) * 1000000.0 / (records.back().mono - records.front().mono) : 0;
         std::ofstream summary("capture.json");
         summary << "{\"requested_fps\":" << (hfr ? OS04A10_HFR_FPS : 30)
-                << ",\"measurement\":\"" << (nv21 ? "VIN CH0 NV21" : "VIN IFE RAW") << "\",\"frames\":" << records.size()
+                << ",\"measurement\":\"" << (nv21 ? "VIN CH0 NV21" : "VIN IFE RAW") << "\",\"frames\":" << total_frames
                 << ",\"monotonic_fps\":" << std::setprecision(10) << fps
                 << ",\"acquire_errors\":" << acquire_errors << ",\"release_errors\":" << release_errors
                 << ",\"queue_depth\":" << queue_depth
@@ -391,7 +488,7 @@ int main(int argc, char **argv) {
                 << ",\"burst_frame_bytes\":" << (burst ? burst_frame_bytes : 0)
                 << ",\"sample_saved\":" << (sampled ? "true" : "false")
                 << ",\"exit_code\":" << rc << ",\"interrupted\":" << (stopped ? "true" : "false") << "}\n";
-        std::cout << (nv21 ? "nv21_frames=" : "raw_frames=") << records.size() << " monotonic_fps=" << fps << " result=" << rc << '\n';
+        std::cout << (nv21 ? "nv21_frames=" : "raw_frames=") << total_frames << " monotonic_fps=" << fps << " result=" << rc << '\n';
     } catch (const std::exception &e) { std::cerr << e.what() << '\n'; return 8; }
     return rc;
 }

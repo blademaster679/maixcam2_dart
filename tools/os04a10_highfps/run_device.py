@@ -22,6 +22,9 @@ def main():
     ap.add_argument('--driver-build', type=Path, default=Path('.maixpy/os04a10-build'))
     ap.add_argument('--sdk', type=Path, default=Path.home()/'maix/MaixCDK')
     ap.add_argument('--seconds', type=int, default=10)
+    ap.add_argument('--business-config', type=Path)
+    ap.add_argument('--business-idle', action='store_true')
+    ap.add_argument('--business-stress', action='store_true')
     ap.add_argument('--official-mode', choices=['full60','full120','full180','crop240','crop360'])
     ap.add_argument('--camera-api', action='store_true', help='Use the isolated official Camera API probe')
     ap.add_argument('--direct-venc', action='store_true', help='Record VIN NV12 with asynchronous AX VENC, bypassing Camera/IVPS copies')
@@ -50,6 +53,10 @@ def main():
     ap.add_argument('--sample-frame', action='store_true', help='Save one diagnostic frame during warmup')
     ap.add_argument('--queue-depth', type=int, choices=range(4,33), help='Default: RAW 16, NV21 4')
     args = ap.parse_args()
+    if args.business_config and (args.official_mode!='full180' or not args.nv21 or args.camera_api or args.record or args.burst):
+        ap.error('Business adapter requires full180 NV21 only')
+    if (args.business_idle or args.business_stress) and not args.business_config: ap.error('Business load flags require config')
+    if args.business_idle and args.business_stress: ap.error('Idle and stress are mutually exclusive')
     if args.queue_depth is None:
         args.queue_depth = 4 if args.nv21 or args.direct_venc or args.fullfov_probe else 8 if args.camera_api else 16
     if not 1 <= args.seconds <= 1800:
@@ -139,7 +146,7 @@ def main():
     if manifest['msp_version'] not in before:
         raise RuntimeError('Device MSP does not match this build')
     ssh('mkdir -p '+shlex.quote(args.remote_root)+' && mkdir '+shlex.quote(remote), 'stage')
-    program = 'direct_record' if args.direct_venc else 'camera_test' if args.camera_api else 'capture'
+    program = 'business_capture' if args.business_config else 'direct_record' if args.direct_venc else 'camera_test' if args.camera_api else 'capture'
     files = [(args.driver_build/program, 'capture'),
              (args.sdk/'components/maixcam_lib/lib_maixcam2/libmaixcam_lib.so', 'libmaixcam_lib.so'),
              (args.sdk/'components/nn/lib/libms_asr_ax630c.so', 'libms_asr_ax630c.so'),
@@ -147,6 +154,7 @@ def main():
              (args.sdk/'components/3rd_party/datachannel/lib/maixcam2/libdatachannel.so', 'libdatachannel.so'),
              (args.sdk/'dl/extracted/onnxruntime_srcs/maixcam2_onnxruntime_v1.22.0/lib/libonnxruntime.so.1.22.0', 'libonnxruntime.so.1'),
              (args.sdk/('dl/extracted/maixcam2_msp_srcs/maixcam2_msp_arm64_glibc_v'+manifest['msp_version'])/'out/arm64_glibc/third-party/lib/libtinyalsa.so.2.0.0', 'libtinyalsa.so.2')]
+    if args.business_config: files.append((args.business_config,'business.conf'))
     if args.experimental:
         files.append((args.driver_build/'libsns_os04a10.so', 'libsns_os04a10.so'))
     if args.system_media_lib:
@@ -202,6 +210,9 @@ def main():
         if args.venc_copy: command += ['--venc-copy']
         if args.venc_fps: command += ['--venc-fps',str(args.venc_fps)]
         if args.venc_depth: command += ['--venc-depth',str(args.venc_depth)]
+        if args.business_config: command += ['--business-config',remote+'/business.conf']
+        if args.business_idle: command += ['--business-idle']
+        if args.business_stress: command += ['--business-stress']
         if args.exercise_switch: command += ['--exercise-switch']
         if args.observe_gaps: command += ['--observe-gaps']
         if args.no_health: command += ['--no-health']
@@ -220,7 +231,7 @@ def main():
         after = ssh('sha256sum /opt/lib/libsns_os04a10.so; cat /proc/ax_proc/version', 'baseline-after').stdout
         if before != after:
             raise RuntimeError('Original system driver or MSP changed during experiment')
-    artifact_names = ['capture.json', 'frames.csv', 'loaded_maps.txt', 'sample.raw', 'sample.json',
+    artifact_names = ['motion.csv','camera_settings.json','vision.csv','targets.jsonl','leases.json','business.json','capture.json', 'frames.csv', 'loaded_maps.txt', 'sample.raw', 'sample.json',
                       'registers_before.csv', 'registers_after.csv', 'health.csv', 'progress.json', 'sample.nv21',
                       'capture.stdout.log','capture.stderr.log','process_exit_code',
                       'record.h264','encoded_frames.csv','api_checks.csv','ivps_config.csv','sample.nv12','record.nv21',
@@ -254,7 +265,7 @@ def main():
         'experimental':args.experimental, 'hfr':args.hfr, 'crop_probe':args.crop_probe,
         'fullfov_probe':args.fullfov_probe,
         'official_mode':args.official_mode, 'camera_api':args.camera_api, 'record':args.record,
-        'direct_venc':args.direct_venc,
+        'direct_venc':args.direct_venc, 'business':bool(args.business_config), 'business_idle':args.business_idle, 'business_stress':args.business_stress,
         'burst':args.burst,
         'realtime':args.realtime,
         'venc_retry':args.venc_retry,'venc_fps':args.venc_fps,

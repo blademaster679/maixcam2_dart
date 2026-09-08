@@ -6,8 +6,10 @@ HERE=Path(__file__).resolve().parent
 MSP='3.0.0_20250319114413'
 def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--out',type=Path,default=Path('.maixpy/official-build'));ap.add_argument('--app-only',action='store_true');a=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument('--out',type=Path,default=Path('.maixpy/official-build'));ap.add_argument('--app-only',action='store_true');ap.add_argument('--business',action='store_true');a=ap.parse_args()
  out=a.out.resolve();sdk=Path.home()/'maix/MaixCDK';build=Path('build').resolve();archive=Path('.maixpy/official-comparison').resolve()
+ source_inputs=[*HERE.glob('*.cpp'),*HERE.glob('*.hpp'),*Path('main/src').glob('*.cpp'),*Path('main/include/dart').glob('*.hpp')]
+ input_hashes={str(p.resolve()):sha(p) for p in source_inputs}
  flags={k:shlex.split(v) for line in (build/'main/CMakeFiles/main.dir/flags.make').read_text().splitlines() if ' = ' in line for k,v in [line.split(' = ',1)]}
  original=shlex.split((build/'CMakeFiles/dart_green_detect.dir/link.txt').read_text());cxx=original[0]
  if not a.app_only:
@@ -54,6 +56,17 @@ def main():
   cmd=[cxx,'-I'+str(out),*flags['CXX_DEFINES'],*flags['CXX_INCLUDES'],*flags['CXX_FLAGS'],'-g','-c',str(source),'-o',str(out/object_name)]
   with (out/(object_name+'.log')).open('w') as log: subprocess.run(cmd,check=True,stdout=log,stderr=subprocess.STDOUT)
   compiles.append(cmd)
+ if a.business:
+  sources=[HERE/'business_capture.cpp',*[Path('main/src').resolve()/n for n in ['config.cpp','green_detector.cpp','green_detector_core.cpp','target_fusion.cpp','target_json.cpp','visual_motion.cpp','nv21_pipeline.cpp']]]
+  for source in sources:
+   obj=out/('business_'+source.stem+'.o')
+   cmd=[cxx,'-I'+str(out),*flags['CXX_DEFINES'],*flags['CXX_INCLUDES'],*flags['CXX_FLAGS'],'-O2','-g','-c',str(source),'-o',str(obj)]
+   with (out/(obj.name+'.log')).open('w') as log: subprocess.run(cmd,check=True,stdout=log,stderr=subprocess.STDOUT)
+   compiles.append(cmd)
+  link=[x for x in original if x not in ['CMakeFiles/dart_green_detect.dir/exe_src.c.o','main/libmain.a']]
+  link.insert(1,'-Wl,--as-needed');i=link.index('-o');link[i+1]=str(out/'business_capture');link[i:i]=[str(out/('business_'+source.stem+'.o')) for source in sources]
+  with (out/'business-link.log').open('w') as log: subprocess.run(link,cwd=build,check=True,stdout=log,stderr=subprocess.STDOUT)
+  (out/'business-sources.json').write_text(json.dumps({str(p):sha(p) for p in [*sources,HERE/'official_capture.cpp',HERE/'vin_nv21_frame.hpp',HERE/'vin_camera_settings.hpp',*Path('main/include/dart').glob('*.hpp')]},indent=2)+'\n')
  for name,objects in [('capture',['capture.o']),('camera_test',['camera_test.o','official_camera.o']),('direct_record',['direct_record.o'])]:
   if not (out/objects[0]).exists(): continue
   link=[x for x in original if x not in ['CMakeFiles/dart_green_detect.dir/exe_src.c.o','main/libmain.a']]
@@ -63,5 +76,7 @@ def main():
  for name in ['official_capture.cpp','official_camera_test.cpp','official_record.cpp','direct_venc.hpp','vin_venc_queue.hpp','venc_input_copy.hpp']:
   if (HERE/name).exists():
    shutil.copy2(HERE/name,out/name);app_sources[name]=sha(HERE/name)
+ if any(sha(Path(p))!=digest for p,digest in input_hashes.items()):
+  raise SystemExit('Source changed during build; BUILD_INCOMPLETE retained. Rebuild before deployment.')
  (out/'app-build.json').write_text(json.dumps({'compile':compiles,'app_source_sha256':app_sources,'official_camera_sha256':sha(out/'maix_camera_maixcam2.cpp'),'middleware_sha256':sha(out/'ax_middleware.hpp'),'local_sdk_commit':subprocess.check_output(['git','-C',str(sdk),'rev-parse','HEAD'],text=True).strip()},indent=2)+'\n');(out/'BUILD_INCOMPLETE').unlink();print(out)
 if __name__=='__main__': main()
