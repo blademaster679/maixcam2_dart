@@ -1,0 +1,299 @@
+{
+  "run_id": "os04a10-20260908-205236-388408",
+  "business-analysis.json": {
+    "run": ".maixpy/runs/os04a10-20260908-205236-388408",
+    "seconds": 4.99673,
+    "capture_exit_code": 0,
+    "interrupted": false,
+    "negative_software_source_age_count": 0,
+    "output_timestamp_nonincreasing": 0,
+    "sensor_vin_ife_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "InFrmCnt": "-",
+      "InFrmDrop": "-",
+      "InSeqNum": "-",
+      "InFps": "-",
+      "InBufCnt": "-",
+      "InBlkId": "-",
+      "OutFrmCnt": "1289",
+      "OutFrmDrop": "0",
+      "OutSeqNum": "1289",
+      "OutFps": "180.1",
+      "OutBufCnt": "0",
+      "OutBlkId": "0x5e004002",
+      "LostCnt": "0"
+    },
+    "vin_itp_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "InFrmCnt": "1289",
+      "InFrmDrop": "0",
+      "InSeqNum": "1289",
+      "InFps": "180.1",
+      "InBufCnt": "0",
+      "InBlkId": "0x5e004002"
+    },
+    "nv21_channel_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "OutFrmCnt": "1288",
+      "OutFrmDrop": "21",
+      "OutSeqNum": "1288",
+      "OutFps": "180.1",
+      "OutBufCnt": "1",
+      "OutBlkId": "0x5e001000",
+      "LostCnt": "0"
+    },
+    "application_get_fps": 180.11779703926368,
+    "nv21_get_frames": 901,
+    "pts_raw_ticks_per_second": 999899.5342954291,
+    "sequence_missing": 0,
+    "sequence_duplicate": 0,
+    "sequence_reversed": 0,
+    "pts_nonincreasing": 0,
+    "acquire_errors": 0,
+    "leases": {
+      "acquired": 1266,
+      "released": 1266,
+      "release_errors": 0,
+      "map_errors": 0
+    },
+    "business": {
+      "received": 901,
+      "slot_replaced": 56,
+      "scheduled_skipped": 397,
+      "shutdown_discarded": 0,
+      "slot_taken": 845,
+      "upstream_missing": 0,
+      "upstream_duplicate": 0,
+      "upstream_reversed": 0,
+      "pts_nonincreasing": 0,
+      "vision_frames": 448,
+      "green_detection_calls": 448,
+      "armor_detection_calls": 300,
+      "control_outputs": 1258,
+      "first_received_us": 35369746011,
+      "last_received_us": 35374742741,
+      "failed": false
+    },
+    "green_detection_call_hz": 89.65863674843347,
+    "direct_green_observation_hz": 0.0,
+    "armor_detection_call_hz": 60.03926567975456,
+    "full_search_hz": 30.01963283987728,
+    "motion_call_hz": 30.01963283987728,
+    "control_output_fps": 179.9396180350794,
+    "software_source_age_at_vision_start_ms": {
+      "p50": 0.079,
+      "p95": 3.5010499999999998,
+      "p99": 4.522739999999998,
+      "max": 5.18
+    },
+    "software_receive_to_vision_finish_ms": {
+      "p50": 5.5425,
+      "p95": 14.29675,
+      "p99": 18.722479999999933,
+      "max": 26.171
+    },
+    "software_source_age_at_control_ms": {
+      "p50": 12.621,
+      "p95": 19.964599999999987,
+      "p99": 28.396160000000002,
+      "max": 39.809
+    },
+    "source_exposure_age_ms": null,
+    "exposure_to_control_latency_ms": null,
+    "control_output_semantics": "TargetEstimate generation timestamps; JSONL disk visibility and UART/CAN transport are not measured.",
+    "telemetry_io": {
+      "frames.csv.io.json": {
+        "capacity_bytes": 1048576,
+        "high_water_bytes": 4096,
+        "written_bytes": 58783,
+        "max_write_us": 104,
+        "failed": false
+      },
+      "motion.csv.io.json": {
+        "capacity_bytes": 262144,
+        "high_water_bytes": 4096,
+        "written_bytes": 5742,
+        "max_write_us": 154,
+        "failed": false
+      },
+      "progress.jsonl.io.json": {
+        "capacity_bytes": 65536,
+        "high_water_bytes": 0,
+        "written_bytes": 0,
+        "max_write_us": 0,
+        "failed": false
+      },
+      "targets.jsonl.io.json": {
+        "capacity_bytes": 8388608,
+        "high_water_bytes": 4096,
+        "written_bytes": 2865588,
+        "max_write_us": 1135,
+        "failed": false
+      },
+      "vision.csv.io.json": {
+        "capacity_bytes": 1048576,
+        "high_water_bytes": 4096,
+        "written_bytes": 38237,
+        "max_write_us": 886,
+        "failed": false
+      }
+    },
+    "timing_limit": "Host receive timestamps are lower bounds on source age. SDK payload PTS exposure phase and cross-clock offset are unverified.",
+    "stage_ms": {
+      "search_us": {
+        "p50": 0.001,
+        "p95": 3.3825499999999997,
+        "p99": 3.7720199999999964,
+        "max": 4.441
+      },
+      "roi_convert_us": {
+        "p50": 0.3735,
+        "p95": 0.8230999999999996,
+        "p99": 1.5959099999999988,
+        "max": 3.434
+      },
+      "detect_us": {
+        "p50": 3.8585000000000003,
+        "p95": 5.7246999999999995,
+        "p99": 8.597469999999984,
+        "max": 15.447
+      },
+      "motion_us": {
+        "p50": 0.001,
+        "p95": 6.207799999999996,
+        "p99": 8.729009999999962,
+        "max": 12.384
+      },
+      "motion_worker_us": {
+        "p50": 5.818,
+        "p95": 7.662949999999999,
+        "p99": 10.710399999999982,
+        "max": 15.914
+      },
+      "motion_us_meaning": "vision-side Y thumbnail preparation and dispatch only",
+      "green_us": {
+        "p50": 3.358435,
+        "p95": 5.426374,
+        "p99": 7.351169999999999,
+        "max": 15.4361
+      },
+      "armor_and_fusion_us": {
+        "p50": 0.53575,
+        "p95": 1.5366374999999999,
+        "p99": 2.52320139999999,
+        "max": 5.22229
+      }
+    },
+    "rss_kb": {
+      "p50": 34616.0,
+      "p95": 34630.4,
+      "p99": 34631.68,
+      "max": 34632
+    },
+    "rss_first_last_kb": [
+      34088,
+      34616
+    ],
+    "temperature_c": {
+      "p50": 47.7922,
+      "p95": 48.55142,
+      "p99": 48.612283999999995,
+      "max": 48.6275
+    },
+    "mipi_errors_max": 0,
+    "cpu_percent_one_core": 114.93638072302944,
+    "cpu_khz": {
+      "p50": 1200000.0,
+      "p95": 1200000.0,
+      "p99": 1200000.0,
+      "max": 1200000
+    },
+    "safe_for_control_true": 0,
+    "captured_target_invalid_gap_ms": null,
+    "accuracy": "unmeasured: no human ground truth",
+    "launcher_after": "daemon=running\nlauncher=running\nautostart=none",
+    "capture_continuity_pass": true,
+    "competition_acceptance_pass": false
+  },
+  "capture.json": {
+    "requested_fps": 180,
+    "measurement": "VIN CH0 NV21",
+    "frames": 901,
+    "monotonic_fps": 180.117797,
+    "acquire_errors": 0,
+    "release_errors": 0,
+    "queue_depth": 4,
+    "realtime": false,
+    "itp_depth_request": 4,
+    "burst_recording": false,
+    "burst_frames": 0,
+    "burst_frame_bytes": 0,
+    "sample_saved": false,
+    "exit_code": 0,
+    "interrupted": false
+  },
+  "leases.json": {
+    "acquired": 1266,
+    "released": 1266,
+    "release_errors": 0,
+    "map_errors": 0
+  },
+  "business.json": {
+    "received": 901,
+    "slot_replaced": 56,
+    "scheduled_skipped": 397,
+    "shutdown_discarded": 0,
+    "slot_taken": 845,
+    "upstream_missing": 0,
+    "upstream_duplicate": 0,
+    "upstream_reversed": 0,
+    "pts_nonincreasing": 0,
+    "vision_frames": 448,
+    "green_detection_calls": 448,
+    "armor_detection_calls": 300,
+    "control_outputs": 1258,
+    "first_received_us": 35369746011,
+    "last_received_us": 35374742741,
+    "failed": false
+  },
+  "camera_settings.json": {
+    "ae_enabled": 0,
+    "requested_shutter_us": 500,
+    "sensor_row_us_nominal": 6.78334,
+    "manual_shutter_us": 494,
+    "manual_again_raw": 1024,
+    "awb_enabled": 0,
+    "wb_raw": [
+      517,
+      256,
+      256,
+      443
+    ],
+    "calibrated": false
+  },
+  "itp_depth.json": {
+    "before": 1,
+    "after": 4,
+    "get_before": 0,
+    "set": 0,
+    "get_after": 0
+  },
+  "process_exit_code": "0",
+  "mode-before.log": "daemon=running\nlauncher=running\nautostart=none",
+  "mode-after.log": "daemon=running\nlauncher=running\nautostart=none",
+  "baseline-before.log": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so\nAx_Version V3.0.0_20250319114413",
+  "baseline-after.log": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so\nAx_Version V3.0.0_20250319114413",
+  "vin_statistics_before.txt": "--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1         0          0         0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    0         0         0         0        \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    0         0         0         0        \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          0         0          0         0      0         0x0        0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     0        0         0        0     0        0x0       \n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     0         0          0         0      0         0x0        0",
+  "vin_statistics_after.txt": "--------------------- VIN VERSION ---------------------\n[Axera version]: ax_proton V3.0.0_20250319114413 Mar 19 2025 11:58:29 JK\n\n---------------------- VIN DEV STATISTICS ---------------------------\nDev OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0   1292      0          1291      0      0         0x0        0      \nDev DelayCur  DelayAve  DelayMin  DelayMax \n0   0         0         0         0        \n\n---------------------- VIN PIPE STATISTICS --------------------------\n[PIPE]\nPipe HwTimeCur HwTimeAve HwTimeMin HwTimeMax\n0    3017      2994      2938      3067     \nPipe DelayCur  DelayAve  DelayMin  DelayMax \n0    4159      4053      3895      6348     \n\n[IFE]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId    OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt\n0    0     -        -         -        -     -        -          1289      0          1289      180.1  0         0x5e004002 0      \n\n[ITP]\nPipe ChnId InFrmCnt InFrmDrop InSeqNum InFps InBufCnt InBlkId   \n0    0     1289     0         1289     180.1 0        0x5e004002\n\n[CHN]\nPipe ChnId OutFrmCnt OutFrmDrop OutSeqNum OutFps OutBufCnt OutBlkId   LostCnt \n0    0     1288      21         1288      180.1  1         0x5e001000 0",
+  "raw_sha256": {
+    "frames.csv": "c46b29a7d39521b94f8c72b44ead81e57e04807c64802ef49d6523b3192bd388",
+    "vision.csv": "1bbd15adb97d9001aeeb4102b42a6dd317970851d35280c7ceca20383e5ed0cd",
+    "motion.csv": "37710905d5b1898aa84c9c1f61f38067381a78d7969af6f90acc2854da94de29",
+    "targets.jsonl": "980e760fa7d58058315a1bc7ee7e394896b73dc9e0bf8ce9ffb092e89fc2d170",
+    "health.csv": "0f286399417ef2eec4b69588ed93d23c28e88ac31ccd1b964c38fa9505462859",
+    "capture.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

@@ -1,7 +1,8 @@
 # MaixCAM2 飞镖绿灯与装甲板制导 v0.2
 
-本工程面向 RoboMaster 飞镖视觉。当前无模型实时档为 `480×360@60fps`；
-`640×480` 保留为画质优先档，但不作为稳定 60 FPS 配置。v0.2 使用
+本工程面向 RoboMaster 飞镖视觉。比赛主模式按 **OS04A10 全视野1344×760@180fps** 开发，
+已接入独立VIN异步业务入口；标定和真实目标验收完成前控制保持无效。
+保留 `480×360@60fps` 稳定配置作为回退基线；`640×480` 为画质优先档。v0.2 使用
 “捕获锥/预测 ROI 多尺度绿灯候选 + 任意滚转双灯条几何 + 局部 YOLO11n-Pose +
 视线坐标跟踪/全局运动补偿”的混合链路，并通过统一 `TargetEstimate` JSON v2
 输出控制安全状态。
@@ -11,7 +12,7 @@
 `npu.enabled=false`、`target_geometry.pose_enabled=false`。完整完成度和仍需实测的
 项目见 [v0.2 实施状态](docs/IMPLEMENTATION_STATUS_V0.2.md)。
 
-## 检测链路
+## 480×360稳定链路（既有v0.2）
 
 - 在原始 480×360 RGB 图上组合 `2G-R-B`、绿色占比、局部背景均值/方差、亮度与
   饱和白芯，并用 `2/4/6/9/14 px` 多尺度响应搜索微小灯点。SEARCH/REACQUIRE
@@ -34,7 +35,7 @@
   跟踪时优先当前轨迹；启用模型后传统检测与 NPU 自动交错运行，各约 30 Hz，
   Kalman/控制输出保持 60 Hz，避免把两段延迟叠在同一帧。
 
-## 帧率策略与当前结果
+## 480×360回退基线的帧率结果
 
 默认配置在每两帧执行一次传统检测（30 Hz），计划跳过帧由 Kalman 更新，控制估计仍按
 相机的 60 Hz 节拍输出。全捕获锥每 30 次传统检测刷新一次，真实漏检立即恢复全锥；
@@ -50,9 +51,9 @@ USB 有线板端最坏负载实测中，480×360 达到 **59.985 FPS**，传统�
 [板端实测](reports/DEVICE_BENCHMARK_2026-09-01.md)。录像缺少逐帧真值，输出率不能
 解释为真实召回率或误报率；长测没有芯片温度字段，温度上限仍需单独记录。
 
-## 下一步执行计划（2026-09-02）
+## 原v0.2执行计划（2026-09-02，历史基线）
 
-下面只列尚未完成的工作。v0.2 检测、跟踪、JSON、回放评测、模型接口和无模型
+以下计划保留原60fps基线口径；比赛主模式的标定、性能与数据验收应另以1344×760@180配置完成。下面只列尚未完成的工作。v0.2 检测、跟踪、JSON、回放评测、模型接口和无模型
 60 FPS 优化已经完成，不再重复开发；每一步只有达到“完成条件”后才进入依赖它的下一步。
 
 最近一次板端实测的复现基线为 MaixCAM2 + OS04D10、系统镜像
@@ -89,9 +90,41 @@ USB 有线板端最坏负载实测中，480×360 达到 **59.985 FPS**，传统�
 修复、失败对照与编码限制见 [360fps复测报告](tools/os04a10_highfps/OFFICIAL_RETEST.md)；前次录像及接口测试见 [官方功能验证报告](tools/os04a10_highfps/OFFICIAL_VALIDATION.md)。360fps连续硬件编码仍未通过。
 
 此前纯裁剪模式覆盖原图宽、高各约24%；官方binning加裁剪模式约覆盖宽、高各48%。
-驱动与测量程序位于独立目录，现有绿色检测业务尚未接入高速模式。
+驱动与测量程序位于独立目录；新增直接VIN业务入口的状态见下节。
 后续需要图像/色卡验证、多轮稳定性复测、Camera API适配、重启恢复与裁剪后的相机标定，
 再评估业务端消费帧率；采集359.83fps不意味着检测链路能逐帧处理。
+
+## 全视野 180fps 业务开发模式（2026-09-08）
+
+新增隔离 `business_capture` 入口，复用官方直接 VIN NV21 采集和 v0.2 检测/跟踪。
+应用只保留最新待处理帧，NV21 全视野色度搜索后回原图局部 RGB ROI 精定位；独立线程
+按 180Hz 生成预测 TargetEstimate。稳定的 `config/green_detector.conf`（480×360@60）保持原样。
+新配置为 `config/green_detector_full180.conf`，只能用于此隔离入口；普通同步入口拒绝高速配置。
+
+该入口完成一次30分钟压力复测：324245帧、180.136fps、零测量序号异常，DMA全部归还；
+绿灯/装甲调用88.67/59.79Hz，TargetEstimate生成约180Hz，软件接收后源年龄P95 22.992ms。
+此前长测出现291帧缺失的记录仍保留。无人工真值，目标可见时直接测量≥60Hz、曝光端到端
+延迟、最坏跟踪ROI和比赛准确率尚未验收，不能将本次结果表述为比赛链路全部通过。
+
+```bash
+python3 tools/os04a10_highfps/build_official.py --out .maixpy/business-new --business
+export PATH="$PWD/.maixpy/host-tools/sshpass/usr/bin:$PATH"
+python3 tools/os04a10_highfps/run_device.py \
+  --driver-build .maixpy/business-new --official-mode full180 --nv21 \
+  --itp-depth 4 --queue-depth 4 --seconds 10 --system-media-lib \
+  --remote-root /root/os04a10-tests \
+  --business-config config/green_detector_full180.conf
+python3 tools/os04a10_highfps/analyze_business.py RUN_DIRECTORY
+```
+
+先短测及恢复，再30秒空载（`--business-idle`）、两分钟压力（`--business-stress`），检查
+通过后再做30分钟。runner临时暂停并恢复启动器，不覆盖系统库或修改自启动；原相机模式
+使用已有基线程序复测。不要直接安装这个实验入口为比赛自启动应用。
+
+新模式没有实测标定或真实模型，因此 `angles_valid=false`、`safe_for_control=false`，
+NPU和Pose必须关闭。PTS保留SDK原值，曝光阶段与跨时钟偏移未知；日志明确区分接收后
+软件年龄和未验证的曝光端到端延迟。逐帧日志使用固定容量异步字节缓冲；溢出或写盘失败即报错，`*.io.json`记录写入延迟和缓冲高水位。180Hz指TargetEstimate生成频率，UART/CAN尚未接通。阶段频率、失败对照、验收边界与当前结论见
+[180fps业务验证报告](reports/BUSINESS_FULL180_2026-09-08.md)。公共Camera/IVPS路径仍需另行验收。
 
 ## 每次打开 WSL2 终端
 

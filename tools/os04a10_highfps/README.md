@@ -1,8 +1,10 @@
 # OS04A10 / MaixCAM2 高帧率驱动研发
 
+2026-09-08业务进展：官方全视野180fps已接入独立VIN异步检测入口，完成一次30分钟业务采集连续性复测。命令见文末，完整结果与未通过项见[业务验证报告](../../reports/BUSINESS_FULL180_2026-09-08.md)。下列逆向说明保留历史口径，不再作为当前模式资料缺失的判断。
+
 2026-09-08 最新[360fps复测与修复报告](OFFICIAL_RETEST.md)：官方640×360模式将ITP内部源队列从1增加到4、保持输出队列8后，**NV21连续30分钟647,698帧、平均359.832fps，无序号异常与MIPI错误**。360fps连续硬件编码仍因队列积压未通过。官方1344×760@180全视野NV21也已通过30分钟，前次失败对照及录像保留在[初测报告](OFFICIAL_VALIDATION.md)。来源差异见[官方提交对比](OFFICIAL_COMPARISON.md)。下文保留原有驱动的研发记录。
 
-当前状态：**逆向中心裁剪模式已完成640×360 RAW的30分钟采集：647,698帧、平均359.832fps，无序号异常。长测SSH退出等待超时后补取证据，修复后短测正常退出；尚不作为生产驱动发布。** 该模式通过现有源码与手册字段推导，没有使用厂商360fps binning表。
+历史逆向分支状态：**逆向中心裁剪模式已完成640×360 RAW的30分钟采集：647,698帧、平均359.832fps，无序号异常。长测SSH退出等待超时后补取证据，修复后短测正常退出；尚不作为生产驱动发布。** 该模式通过现有源码与手册字段推导，没有使用厂商360fps binning表。
 
 
 2026-09-08：[全视野模式研究与上板尝试](FULL_FOV.md)已完成原生2688×1520约89.958fps的30秒RAW对照。全视野640×360@360fps仍未实现；新增同型号源码/ELF序列分析器及30/60/90全幅时序候选。
@@ -85,4 +87,27 @@ python3 -B tools/os04a10_highfps/analyze.py .maixpy/runs/<run-directory>
 
 收到资料后，用 `profile.py` 定义的 JSON 字段导入完整有序 `registers: [[address,value,delay_us], ...]`，`source` 写准确文件版本/页码，`status` 为 `vendor_sequence_supplied`。使用 `build.py --profile <vendor.json> --out <new-directory>` 构建；先复核生成的补丁与时序，再执行 `run_device.py --experimental --hfr` 的有界点亮测试。`compile_only` 合成测试产物被上板工具拒绝。
 
-逆向裁剪路线后续重点是图像与Bayer核验、NV21持续吞吐、MaixCDK API集成及重启恢复。具体已完成项以最新验证记录为准。现阶段尚未将高速模式接入下游绿色检测业务。
+逆向裁剪路线后续重点是图像与Bayer核验、NV21持续吞吐、MaixCDK API集成及重启恢复。具体已完成项以最新验证记录为准。2026-09-08已新增下游绿色/装甲检测的独立全视野180fps入口，见下节；公共Camera/IVPS消费路径仍需独立验收。
+
+## 全视野180fps业务入口（2026-09-08）
+
+`build_official.py --out <新目录> --business` 构建独立 `business_capture`，复用官方
+`official_capture.cpp` 的VIN初始化，链接 `main/src` 中的v0.2检测与异步NV21流水线。
+部署用 `run_device.py --driver-build <目录> --official-mode full180 --nv21
+--itp-depth 4 --queue-depth 4 --system-media-lib --remote-root /root/os04a10-tests
+--business-config config/green_detector_full180.conf`，另加 `--seconds` 控制时长。
+5～10秒模式/恢复、30秒 `--business-idle`、120秒 `--business-stress` 依次检查通过后，
+才能进行1800秒压力测试。完整命令见[项目README](../../README.md)。
+
+业务模式区别于上述旧RAW探针：帧元数据不累积，`frames.csv`、`vision.csv`、
+`motion.csv`、`targets.jsonl` 使用有界异步日志。`progress.jsonl` 也是缓冲追加文件，
+不要把文件暂未刷新误认为采集停止。`*.io.json` 记录日志容量、高水位、最大写调用耗时；
+写失败或缓冲溢出会终止，不能忽略。`leases.json` 检查含预热帧的DMA取得/归还平衡。
+`frames.csv.hold_us` 是生产者分发时间，不是消费者最终释放前的持帧时长。
+`business.json` 分开记录最新槽替换、定时主动跳过、退出丢弃与上游序号异常。
+
+用 `analyze_business.py <run目录>` 审计业务频率、接收后源年龄、阶段耗时及资源。
+180Hz指采集/预测生成目标；绿灯和装甲调用频率分别报告，无真值不能推算准确率。
+未标定时角度/PnP/控制安全位无效，NPU/Pose关闭。退出恢复启动器，原始相机模式用
+基线5秒复验，不覆盖系统库、不改自启动。版本、失败记录和验收范围见
+[180fps业务报告](../../reports/BUSINESS_FULL180_2026-09-08.md)。

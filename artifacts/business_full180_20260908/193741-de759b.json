@@ -1,0 +1,37 @@
+{
+  "run_id": "os04a10-20260908-193741-de759b",
+  "capture.json": {
+    "requested_fps": 180,
+    "measurement": "VIN CH0 NV21",
+    "frames": 900,
+    "monotonic_fps": 180.1335713,
+    "acquire_errors": 0,
+    "release_errors": 0,
+    "queue_depth": 4,
+    "realtime": false,
+    "itp_depth_request": 4,
+    "burst_recording": false,
+    "burst_frames": 0,
+    "burst_frame_bytes": 0,
+    "sample_saved": false,
+    "exit_code": 0,
+    "interrupted": false
+  },
+  "leases.json": {
+    "acquired": 1261,
+    "released": 1261,
+    "release_errors": 0,
+    "map_errors": 0
+  },
+  "itp_depth.json": {
+    "before": 1,
+    "after": 4,
+    "get_before": 0,
+    "set": 0,
+    "get_after": 0
+  },
+  "process_exit_code": "0",
+  "mode-after.log": "daemon=running\nlauncher=running\nautostart=none",
+  "baseline-before.log": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so\nAx_Version V3.0.0_20250319114413",
+  "baseline-after.log": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so\nAx_Version V3.0.0_20250319114413"
+}

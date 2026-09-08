@@ -1,0 +1,190 @@
+{
+  "run_id": "os04a10-20260908-194209-aea6f5",
+  "capture.json": {
+    "requested_fps": 180,
+    "measurement": "VIN CH0 NV21",
+    "frames": 21616,
+    "monotonic_fps": 180.1356295,
+    "acquire_errors": 0,
+    "release_errors": 0,
+    "queue_depth": 4,
+    "realtime": false,
+    "itp_depth_request": 4,
+    "burst_recording": false,
+    "burst_frames": 0,
+    "burst_frame_bytes": 0,
+    "sample_saved": false,
+    "exit_code": 0,
+    "interrupted": false
+  },
+  "leases.json": {
+    "acquired": 21977,
+    "released": 21977,
+    "release_errors": 0,
+    "map_errors": 0
+  },
+  "business-analysis.json": {
+    "run": ".maixpy/runs/os04a10-20260908-194209-aea6f5",
+    "seconds": 119.992919,
+    "capture_exit_code": 0,
+    "sensor_vin_ife_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "InFrmCnt": "-",
+      "InFrmDrop": "-",
+      "InSeqNum": "-",
+      "InFps": "-",
+      "InBufCnt": "-",
+      "InBlkId": "-",
+      "OutFrmCnt": "21978",
+      "OutFrmDrop": "0",
+      "OutSeqNum": "21978",
+      "OutFps": "180.1",
+      "OutBufCnt": "0",
+      "OutBlkId": "0x5e004004",
+      "LostCnt": "0"
+    },
+    "vin_itp_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "InFrmCnt": "21978",
+      "InFrmDrop": "0",
+      "InSeqNum": "21978",
+      "InFps": "180.1",
+      "InBufCnt": "0",
+      "InBlkId": "0x5e004004"
+    },
+    "nv21_channel_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "OutFrmCnt": "21978",
+      "OutFrmDrop": "0",
+      "OutSeqNum": "21978",
+      "OutFps": "180.1",
+      "OutBufCnt": "1",
+      "OutBlkId": "0x5e001000",
+      "LostCnt": "0"
+    },
+    "application_get_fps": 180.13562950327093,
+    "nv21_get_frames": 21616,
+    "pts_raw_ticks_per_second": 999998.9916071631,
+    "sequence_missing": 0,
+    "sequence_duplicate": 0,
+    "sequence_reversed": 0,
+    "pts_nonincreasing": 0,
+    "acquire_errors": 0,
+    "leases": {
+      "acquired": 21977,
+      "released": 21977,
+      "release_errors": 0,
+      "map_errors": 0
+    },
+    "business": {
+      "received": 21616,
+      "slot_replaced": 13072,
+      "scheduled_skipped": 19,
+      "shutdown_discarded": 1,
+      "slot_taken": 8543,
+      "upstream_missing": 0,
+      "upstream_duplicate": 0,
+      "upstream_reversed": 0,
+      "pts_nonincreasing": 0,
+      "vision_frames": 8524,
+      "green_detection_calls": 8524,
+      "armor_detection_calls": 0,
+      "control_outputs": 21958,
+      "first_received_us": 31142458666,
+      "last_received_us": 31262451585,
+      "failed": false
+    },
+    "green_detection_call_hz": 71.03752513929592,
+    "direct_green_observation_hz": 0.0,
+    "armor_detection_call_hz": 0.0,
+    "full_search_hz": 30.001770354465666,
+    "motion_call_hz": 0.0,
+    "control_output_fps": 179.98832976205628,
+    "software_source_age_at_vision_start_ms": {
+      "p50": 3.085,
+      "p95": 5.049699999999999,
+      "p99": 5.3367700000000005,
+      "max": 7.685
+    },
+    "software_receive_to_vision_finish_ms": {
+      "p50": 16.294,
+      "p95": 20.9377,
+      "p99": 24.462390000000003,
+      "max": 53.521
+    },
+    "software_source_age_at_control_ms": {
+      "p50": 23.8775,
+      "p95": 32.43314999999998,
+      "p99": 38.094159999999974,
+      "max": 75.668
+    },
+    "source_exposure_age_ms": null,
+    "exposure_to_control_latency_ms": null,
+    "timing_limit": "Host receive timestamps are lower bounds on source age. SDK payload PTS exposure phase and cross-clock offset are unverified.",
+    "stage_ms": {
+      "search_us": {
+        "p50": 0.001,
+        "p95": 3.374699999999999,
+        "p99": 4.278330000000013,
+        "max": 11.62
+      },
+      "roi_convert_us": {
+        "p50": 1.679,
+        "p95": 2.4168499999999993,
+        "p99": 3.4863500000000243,
+        "max": 18.778
+      },
+      "detect_us": {
+        "p50": 10.411,
+        "p95": 12.33985,
+        "p99": 14.937470000000005,
+        "max": 30.684
+      },
+      "motion_us": {
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.002,
+        "max": 0.481
+      }
+    },
+    "rss_kb": {
+      "p50": 23372.0,
+      "p95": 23420.0,
+      "p99": 23423.24,
+      "max": 23424
+    },
+    "rss_first_last_kb": [
+      22856,
+      23420
+    ],
+    "temperature_c": {
+      "p50": 57.07645,
+      "p95": 60.14902,
+      "p99": 60.298,
+      "max": 60.3725
+    },
+    "mipi_errors_max": 0,
+    "cpu_percent_one_core": null,
+    "cpu_khz": null,
+    "safe_for_control_true": 0,
+    "captured_target_invalid_gap_ms": null,
+    "accuracy": "unmeasured: no human ground truth",
+    "launcher_after": "daemon=running\nlauncher=running\nautostart=none",
+    "capture_continuity_pass": true,
+    "competition_acceptance_pass": false
+  },
+  "itp_depth.json": {
+    "before": 1,
+    "after": 4,
+    "get_before": 0,
+    "set": 0,
+    "get_after": 0
+  },
+  "process_exit_code": "0",
+  "mode-after.log": "daemon=running\nlauncher=running\nautostart=none",
+  "baseline-before.log": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so\nAx_Version V3.0.0_20250319114413",
+  "baseline-after.log": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so\nAx_Version V3.0.0_20250319114413"
+}

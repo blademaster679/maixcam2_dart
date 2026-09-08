@@ -1,0 +1,45 @@
+{
+  "source_commit": "0033c38",
+  "sdk_commit": "2a0502ecb20e5695b28580b3689492b7a228f9e4",
+  "msp": "3.0.0_20250319114413",
+  "official_profile": {
+    "status": "official_source_test",
+    "sensor": "OS04A10",
+    "source_commits": {
+      "msp": "71ca5afe0b7db721c1c95a7488db6d9223060365",
+      "cdk": "fa498da900ffced8a09d79793b43d07f5bacf65e"
+    }
+  },
+  "sensor_sha256": "6fa95adebdf0f904fa4ea94bcc8d7079fbd38998f68e1ccadac9a63c11ad9273",
+  "business_binary_sha256": "fadaccea19adf4d51b3336b1fc62027d24cf9856066c59684aee792ff0e05632",
+  "configuration_sha256": "9ce5186220bff161c7c404cf239e60f9496cfe14a5488acc7e1184e0cd510555",
+  "sources": {
+    "tools/os04a10_highfps/business_capture.cpp": "b1a5e83fc9ff9c10cd2638d862b763134f452885d25a9b020956bfb598b62603",
+    "main/src/config.cpp": "09c0d759eeb9876104594ecabfda5192fb194cc458d890b653fd61e62277fa8d",
+    "main/src/green_detector.cpp": "c11e44379d16c2fec00b63c0e374a4cbc1cd4ccfc0cb176f012f68cf210130f7",
+    "main/src/green_detector_core.cpp": "d7e786177fd7d24ac6995c9d3776a812622c5558364ab710a590803856948357",
+    "main/src/target_fusion.cpp": "c701bad136b282b0c8b624260f80322a86c46428d35e0fadded5981bfb6200d5",
+    "main/src/target_json.cpp": "4e7383a6f54be97b892eb51682ad76b2f52664f559daad6bb0c4ba4c45a461a2",
+    "main/src/visual_motion.cpp": "c39046850aefede8cda03b1ce61c7139f96a509019e92d85c7e4e621883053a9",
+    "main/src/nv21_pipeline.cpp": "1a0651ab0d02f949ec498c0ada5beb036c3c635137475cefcc13ad3ffc18cadf",
+    "tools/os04a10_highfps/official_capture.cpp": "9ece072e55118e2f8b65412d34af1e3817330041a7b26d527100b73683e43fe7",
+    "tools/os04a10_highfps/vin_nv21_frame.hpp": "592d12bd40ea993a22e653ffc5315fcd0d27fe302825580581b5fd7fe632272f",
+    "tools/os04a10_highfps/vin_camera_settings.hpp": "feebf777382c6176cb1efdff74d2cd5c147a64f655b4f8c4b9c869ea17dc8ebe",
+    "main/include/dart/target_json.hpp": "9f0a7181ff93bbd5d04fe7ec169650c9af2a42f7e2eebaa9cc79042a11527e1d",
+    "main/include/dart/async_frame.hpp": "9efd50557da62584ad02acd9de63ef7dd6b2297f21de6e07ff35691ad4e69991",
+    "main/include/dart/async_log.hpp": "af9e0b2ae58e90177d77d25e85e8ac34c860b636644b18f169108d627b02e6a0",
+    "main/include/dart/visual_motion.hpp": "fda5d822271c2386b47a7645b48b3ff9da458cde7985c5556cb5e43a1226974a",
+    "main/include/dart/nv21_pipeline.hpp": "7c400c950303719ae7816309f9e093c1453ebf836f7ddd28dac238e3fb5c90e1",
+    "main/include/dart/green_detector.hpp": "754eb9520fab534f85355673e2e15d64773aff093e1de1054ed7cdb9ab9e25ba"
+  },
+  "limitations": [
+    "No calibration/model/ground truth",
+    "SDK PTS exposure phase and cross-clock offset unverified",
+    "Current workload uses static desktop images; maximum tracking ROI not performance qualified"
+  ],
+  "middleware_sha256": "8856acbc57d23e1e41bfb708d1d1e1f33dc97f859421fa873e762c5cf5d0351a",
+  "camera_source_sha256": "67970dfaffaabcec3ddc8c7687114180219aaaa1671c9f8459b36f707011e80e",
+  "business_optimization": "-O2, other flags inherited from pinned project build",
+  "build_directory": ".maixpy/business-full180-fused",
+  "official_camera_sha256": "67970dfaffaabcec3ddc8c7687114180219aaaa1671c9f8459b36f707011e80e"
+}

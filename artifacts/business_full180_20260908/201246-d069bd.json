@@ -1,0 +1,229 @@
+{
+  "run_id": "os04a10-20260908-201246-d069bd",
+  "capture.json": {
+    "requested_fps": 180,
+    "measurement": "VIN CH0 NV21",
+    "frames": 21616,
+    "monotonic_fps": 180.1360378,
+    "acquire_errors": 0,
+    "release_errors": 0,
+    "queue_depth": 4,
+    "realtime": false,
+    "itp_depth_request": 4,
+    "burst_recording": false,
+    "burst_frames": 0,
+    "burst_frame_bytes": 0,
+    "sample_saved": false,
+    "exit_code": 0,
+    "interrupted": false
+  },
+  "leases.json": {
+    "acquired": 21981,
+    "released": 21981,
+    "release_errors": 0,
+    "map_errors": 0
+  },
+  "business-analysis.json": {
+    "run": ".maixpy/runs/os04a10-20260908-201246-d069bd",
+    "seconds": 119.992647,
+    "capture_exit_code": 0,
+    "sensor_vin_ife_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "InFrmCnt": "-",
+      "InFrmDrop": "-",
+      "InSeqNum": "-",
+      "InFps": "-",
+      "InBufCnt": "-",
+      "InBlkId": "-",
+      "OutFrmCnt": "22000",
+      "OutFrmDrop": "0",
+      "OutSeqNum": "22000",
+      "OutFps": "180.1",
+      "OutBufCnt": "0",
+      "OutBlkId": "0x5e004004",
+      "LostCnt": "0"
+    },
+    "vin_itp_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "InFrmCnt": "22000",
+      "InFrmDrop": "0",
+      "InSeqNum": "22000",
+      "InFps": "180.1",
+      "InBufCnt": "0",
+      "InBlkId": "0x5e004004"
+    },
+    "nv21_channel_end_snapshot": {
+      "Pipe": "0",
+      "ChnId": "0",
+      "OutFrmCnt": "22000",
+      "OutFrmDrop": "18",
+      "OutSeqNum": "22000",
+      "OutFps": "180.1",
+      "OutBufCnt": "1",
+      "OutBlkId": "0x5e001001",
+      "LostCnt": "0"
+    },
+    "application_get_fps": 180.13603783571838,
+    "nv21_get_frames": 21616,
+    "pts_raw_ticks_per_second": 1000001.2834119743,
+    "sequence_missing": 0,
+    "sequence_duplicate": 0,
+    "sequence_reversed": 0,
+    "pts_nonincreasing": 0,
+    "acquire_errors": 0,
+    "leases": {
+      "acquired": 21981,
+      "released": 21981,
+      "release_errors": 0,
+      "map_errors": 0
+    },
+    "business": {
+      "received": 21616,
+      "slot_replaced": 2101,
+      "scheduled_skipped": 8802,
+      "shutdown_discarded": 0,
+      "slot_taken": 19515,
+      "upstream_missing": 0,
+      "upstream_duplicate": 0,
+      "upstream_reversed": 0,
+      "pts_nonincreasing": 0,
+      "vision_frames": 10713,
+      "green_detection_calls": 10713,
+      "armor_detection_calls": 7184,
+      "control_outputs": 21961,
+      "first_received_us": 32980097509,
+      "last_received_us": 33100090156,
+      "failed": false
+    },
+    "green_detection_call_hz": 89.28047066083974,
+    "direct_green_observation_hz": 0.0,
+    "armor_detection_call_hz": 59.87033522145736,
+    "full_search_hz": 30.00183836264567,
+    "motion_call_hz": 30.00183836264567,
+    "control_output_fps": 180.00641015511522,
+    "software_source_age_at_vision_start_ms": {
+      "p50": 0.078,
+      "p95": 2.352999999999998,
+      "p99": 4.393799999999992,
+      "max": 6.699
+    },
+    "software_receive_to_vision_finish_ms": {
+      "p50": 8.758,
+      "p95": 12.1208,
+      "p99": 18.862639999999896,
+      "max": 40.803
+    },
+    "software_source_age_at_control_ms": {
+      "p50": 14.001,
+      "p95": 21.139,
+      "p99": 29.849560000000032,
+      "max": 59.569
+    },
+    "source_exposure_age_ms": null,
+    "exposure_to_control_latency_ms": null,
+    "timing_limit": "Host receive timestamps are lower bounds on source age. SDK payload PTS exposure phase and cross-clock offset are unverified.",
+    "stage_ms": {
+      "search_us": {
+        "p50": 0.001,
+        "p95": 2.309,
+        "p99": 2.654879999999999,
+        "max": 12.944
+      },
+      "roi_convert_us": {
+        "p50": 0.385,
+        "p95": 1.1807999999999992,
+        "p99": 1.568,
+        "max": 9.237
+      },
+      "detect_us": {
+        "p50": 6.782,
+        "p95": 8.495,
+        "p99": 13.27843999999999,
+        "max": 27.904
+      },
+      "motion_us": {
+        "p50": 0.0,
+        "p95": 0.833,
+        "p99": 1.259,
+        "max": 5.614
+      },
+      "motion_worker_us": {
+        "p50": 0.251,
+        "p95": 0.35,
+        "p99": 0.5110499999999988,
+        "max": 3.281
+      },
+      "motion_us_meaning": "vision-side Y thumbnail preparation and dispatch only",
+      "green_us": {
+        "p50": 3.94921,
+        "p95": 5.0701,
+        "p99": 8.220649599999986,
+        "max": 24.663700000000002
+      },
+      "armor_and_fusion_us": {
+        "p50": 2.69471,
+        "p95": 4.101368,
+        "p99": 5.515311199999995,
+        "max": 24.035790000000002
+      }
+    },
+    "rss_kb": {
+      "p50": 23556.0,
+      "p95": 23556.0,
+      "p99": 23556.0,
+      "max": 23556
+    },
+    "rss_first_last_kb": [
+      23024,
+      23556
+    ],
+    "temperature_c": {
+      "p50": 57.00195,
+      "p95": 59.999825,
+      "p99": 60.2235,
+      "max": 60.298
+    },
+    "mipi_errors_max": 0,
+    "cpu_percent_one_core": 124.92189141026805,
+    "cpu_khz": {
+      "p50": 1200000.0,
+      "p95": 1200000.0,
+      "p99": 1200000.0,
+      "max": 1200000
+    },
+    "safe_for_control_true": 0,
+    "captured_target_invalid_gap_ms": null,
+    "accuracy": "unmeasured: no human ground truth",
+    "launcher_after": "daemon=running\nlauncher=running\nautostart=none",
+    "capture_continuity_pass": true,
+    "competition_acceptance_pass": false
+  },
+  "camera_settings.json": {
+    "ae_enabled": 0,
+    "requested_shutter_us": 500,
+    "sensor_row_us_nominal": 6.78334,
+    "manual_shutter_us": 494,
+    "manual_again_raw": 1024,
+    "awb_enabled": 0,
+    "wb_raw": [
+      517,
+      256,
+      256,
+      443
+    ],
+    "calibrated": false
+  },
+  "itp_depth.json": {
+    "before": 1,
+    "after": 4,
+    "get_before": 0,
+    "set": 0,
+    "get_after": 0
+  },
+  "process_exit_code": "0",
+  "mode-after.log": "daemon=running\nlauncher=running\nautostart=none",
+  "baseline-before.log": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so\nAx_Version V3.0.0_20250319114413",
+  "baseline-after.log": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so\nAx_Version V3.0.0_20250319114413"
+}
