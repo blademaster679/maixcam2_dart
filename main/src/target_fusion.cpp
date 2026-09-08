@@ -1,4 +1,5 @@
 #include "dart/green_detector.hpp"
+#include <stdexcept>
 
 #include <algorithm>
 #include <array>
@@ -656,6 +657,25 @@ ArmorDetection armor_from_validation(const PoseValidation &validation)
 
 }  // namespace
 
+TargetEstimate GreenLightDetector::process_region(
+    maix::image::Image &roi, const CandidateRoi &region, int width, int height,
+    uint64_t timestamp, const MotionPrior *motion, bool force_armor_scan)
+{
+    if (region.x < 0 || region.y < 0 || region.width != roi.width() ||
+        region.height != roi.height() || region.width <= 0 || region.height <= 0 ||
+        region.x > width - region.width || region.y > height - region.height)
+        throw std::invalid_argument("invalid source ROI");
+    if (npu_config_.enabled || target_geometry_.pose_enabled)
+        throw std::invalid_argument("ROI mode requires NPU and pose disabled pending calibrated model integration");
+    region_force_armor_ = force_armor_scan;
+    region_active_ = true; region_ = region; source_width_ = width; source_height_ = height;
+    try {
+        auto result = process(roi, timestamp, motion);
+        region_active_ = false;
+        return result;
+    } catch (...) { region_active_ = false; throw; }
+}
+
 TargetEstimate GreenLightDetector::process(
     maix::image::Image &frame,
     uint64_t timestamp_us,
@@ -669,7 +689,7 @@ TargetEstimate GreenLightDetector::process(
     result.measurement_age_us = result.green.measurement_age_us;
     result.predicted = result.green.predicted;
 
-    if (result.green.apparent_size >= armor_config_.min_green_size_px) {
+    if ((region_active_ && region_force_armor_) || result.green.apparent_size >= armor_config_.min_green_size_px) {
         const int effective_classical_interval = npu_config_.enabled
             ? std::max(2, config_.classical_interval_frames)
             : config_.classical_interval_frames;
@@ -678,8 +698,20 @@ TargetEstimate GreenLightDetector::process(
             (npu_config_.enabled ? last_classical_detection_ran_
                                  : !last_classical_detection_ran_);
         if (armor_scheduler_slot) {
-            last_armor_detection_ = detect_armor(
-                frame, armor_config_, result.green);
+            auto local_green = result.green;
+            if (region_active_) {
+                local_green.center_x -= region_.x; local_green.center_y -= region_.y;
+                local_green.bbox_x -= region_.x; local_green.bbox_y -= region_.y;
+            }
+            last_armor_detection_ = detect_armor(frame, armor_config_, local_green);
+            if (region_active_) {
+                auto translate = [this](Point2f &p) { if (p.valid) { p.x += region_.x; p.y += region_.y; } };
+                auto &a = last_armor_detection_;
+                translate(a.center);
+                for (auto *bar : {&a.left_bar, &a.right_bar}) {
+                    translate(bar->top); translate(bar->bottom); translate(bar->center);
+                }
+            }
             last_armor_timestamp_us_ = timestamp_us;
         }
         const uint64_t armor_cache_age_us =

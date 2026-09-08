@@ -108,6 +108,15 @@ void write_target_estimate_json(
            << "{\"schema_version\":" << target.schema_version
            << ",\"timestamp_us\":" << target.timestamp_us
            << ",\"measurement_age_us\":" << target.measurement_age_us
+           << ",\"angles_valid\":" << (target.angles_valid ? "true" : "false")
+           << ",\"source_metadata_valid\":" << (target.source_metadata_valid ? "true" : "false")
+           << ",\"source_sequence\":" << target.source_sequence
+           << ",\"source_pts_raw\":" << target.source_pts_raw
+           << ",\"source_received_us\":" << target.source_received_us
+           << ",\"application_dropped\":" << target.application_dropped
+           << ",\"upstream_missing\":" << target.upstream_missing
+           << ",\"upstream_duplicate\":" << target.upstream_duplicate
+           << ",\"upstream_reversed\":" << target.upstream_reversed
            << ",\"valid\":" << (target.valid ? "true" : "false")
            << ",\"safe_for_control\":"
            << (target.safe_for_control ? "true" : "false")

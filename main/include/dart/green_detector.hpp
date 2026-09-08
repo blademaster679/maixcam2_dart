@@ -119,6 +119,11 @@ struct GreenLightDetection {
 
 struct TargetEstimate {
     int schema_version = 2;
+    bool angles_valid = true; // legacy path; high-fps uncalibrated path clears this
+    uint64_t source_sequence = 0, source_pts_raw = 0, source_received_us = 0;
+    uint64_t application_dropped = 0, upstream_missing = 0;
+    uint64_t upstream_duplicate = 0, upstream_reversed = 0;
+    bool source_metadata_valid = false;
     uint64_t timestamp_us = 0;
     uint64_t measurement_age_us = 0;
     GuidanceTrackState state = GuidanceTrackState::Search;
@@ -403,6 +408,8 @@ public:
     explicit TemporalTracker(const DetectorConfig &config);
 
     void reset();
+    // Copy-only view of the same normalized state in an integer-offset ROI.
+    TemporalTracker roi_view(int x, int y) const;
     void predict(uint64_t timestamp_us);
     bool has_prediction() const;
     bool tracking_confirmed() const;
@@ -484,6 +491,12 @@ public:
     TargetEstimate process(maix::image::Image &frame,
                            uint64_t timestamp_us,
                            const MotionPrior *motion_prior);
+    // Full-resolution RGB ROI, with all tracker/output coordinates in source pixels.
+    TargetEstimate process_region(maix::image::Image &roi, const CandidateRoi &region,
+                                  int source_width, int source_height,
+                                  uint64_t timestamp_us, const MotionPrior *motion = nullptr,
+                                  bool force_armor_scan = false);
+    detail::TemporalTracker tracker_snapshot() const { return tracker_; }
     // Compatibility alias for early v0.2 callers.
     TargetEstimate process_target(maix::image::Image &frame,
                                   uint64_t timestamp_us,
@@ -492,6 +505,9 @@ public:
     const std::vector<GreenLightCandidateDebug> &last_candidates() const;
 
 private:
+    bool region_active_ = false, region_force_armor_ = false;
+    CandidateRoi region_{};
+    int source_width_ = 0, source_height_ = 0;
     struct Candidate;
     struct CandidateHypothesis {
         bool active = false;

@@ -286,6 +286,16 @@ void TemporalTracker::initialize(const CandidateObservation &candidate,
     covariance_[5][5] = 1.0F;
 }
 
+TemporalTracker TemporalTracker::roi_view(int x, int y) const
+{
+    auto view = *this;
+    view.config_.camera_model.principal_x -= x;
+    view.config_.camera_model.principal_y -= y;
+    view.last_candidate_.center_x -= x; view.last_candidate_.center_y -= y;
+    view.last_candidate_.bbox_x -= x; view.last_candidate_.bbox_y -= y;
+    return view;
+}
+
 void TemporalTracker::predict(uint64_t timestamp_us)
 {
     if (!initialized_) {

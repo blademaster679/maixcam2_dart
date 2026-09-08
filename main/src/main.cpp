@@ -120,6 +120,10 @@ int run(int argc, char **argv)
     const dart::ApplicationConfig config =
         dart::load_application_config(command_line.config_path);
 
+    if (config.camera.fps > 60) {
+        throw std::runtime_error("High-fps profiles require the isolated business_capture VIN entry point");
+    }
+
     maix::camera::Camera camera(config.camera.width,
                                 config.camera.height,
                                 maix::image::Format::FMT_RGB888,

@@ -1873,7 +1873,26 @@ GreenLightDetection GreenLightDetector::process_green(
 
     const auto detection_started = std::chrono::steady_clock::now();
     ++classical_detection_count_;
-    auto candidates = collect_candidates(frame);
+    std::vector<Candidate> candidates;
+    if (region_active_) {
+        auto local_config = config_;
+        local_config.camera_model.principal_x -= region_.x;
+        local_config.camera_model.principal_y -= region_.y;
+        // Cone gating happens in source coordinates after collection.
+        local_config.enable_capture_cone = false;
+        GreenLightDetector local(local_config, armor_config_, target_geometry_);
+        local.tracker_ = tracker_.roi_view(region_.x, region_.y);
+        candidates = local.collect_candidates(frame);
+        for (auto &c : candidates) {
+            c.observation.center_x += region_.x; c.observation.center_y += region_.y;
+            c.observation.bbox_x += region_.x; c.observation.bbox_y += region_.y;
+            c.debug.center_x += region_.x; c.debug.center_y += region_.y;
+            c.debug.bbox_x += region_.x; c.debug.bbox_y += region_.y;
+            c.debug.inside_capture_cone = point_inside_capture_cone(
+                c.observation.center_x, c.observation.center_y,
+                source_width_, source_height_, config_);
+        }
+    } else candidates = collect_candidates(frame);
     update_candidate_hypotheses(candidates, timestamp_us, motion_prior);
     last_candidates_.clear();
     last_candidates_.reserve(candidates.size());
