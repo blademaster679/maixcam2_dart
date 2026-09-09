@@ -10,7 +10,10 @@
 代码和工具链已经实现；比赛模型、相机标定、目标实物尺寸和 300 次实机验收不是
 可以由代码自动生成的占位数据。当前默认配置因此保持
 `npu.enabled=false`、`target_geometry.pose_enabled=false`。完整完成度和仍需实测的
-项目见 [v0.2 实施状态](docs/IMPLEMENTATION_STATUS_V0.2.md)。
+项目见 [v0.2 实施状态](docs/IMPLEMENTATION_STATUS_V0.2.md)。基于全视野 180 fps 代码、
+实测证据和捕获时序重新审查后的当前方案见
+[全视野 180 fps 绿灯识别更新方案](docs/GREEN_DETECTION_PLAN_FULL180.md)；后续开发以该文档
+为准，下面的 60 fps 步骤只保留为历史基线。
 
 ## 480×360稳定链路（既有v0.2）
 
