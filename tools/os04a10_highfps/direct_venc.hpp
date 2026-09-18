@@ -14,6 +14,7 @@ class DirectVenc {
     std::atomic<bool> done{false};
     std::thread drain;
     bool retry_full=false;
+    unsigned retry_budget_us=20000;
     struct SendLog { unsigned long long seq,start,elapsed; unsigned retries; int result,status_result; unsigned left_pics,left_streams; };
     std::vector<SendLog> send_log;
     static unsigned long long clock_us() { return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
@@ -24,9 +25,9 @@ public:
     std::atomic<bool> failed{false};
     std::atomic<unsigned long> submitted{0},packets{0},send_errors{0},release_errors{0};
     unsigned long queue_full_events=0;
-    DirectVenc(unsigned w,unsigned h,unsigned fps,bool retry=false,unsigned rc_fps=0,unsigned fifo_depth=4):retry_full(retry) {
+    DirectVenc(unsigned w,unsigned h,unsigned fps,bool retry=false,unsigned rc_fps=0,unsigned fifo_depth=4,size_t log_capacity=12000,unsigned retry_budget=20000):retry_full(retry),retry_budget_us(retry_budget) {
         try {
-            send_log.reserve(12000);
+            send_log.reserve(log_capacity);
             AX_VENC_MOD_ATTR_T mod={};mod.enVencType=AX_VENC_VIDEO_ENCODER;
             mod.stModThdAttr.u32TotalThreadNum=2;
             require(AX_VENC_Init(&mod),"VENC_Init");initialized=true;
@@ -86,7 +87,7 @@ public:
         do {
             rc=AX_VENC_SendFrame(0,&frame,retry_full ? 0 : 20);
             if(rc==AX_ERR_VENC_QUEUE_FULL) ++queue_full_events;
-            if(rc!=AX_ERR_VENC_QUEUE_FULL || !retry_full || clock_us()-start>=20000) break;
+            if(rc!=AX_ERR_VENC_QUEUE_FULL || !retry_full || clock_us()-start>=retry_budget_us) break;
             ++retries;std::this_thread::sleep_for(std::chrono::microseconds(250));
         }while(!failed);
         AX_VENC_CHN_STATUS_T status={};int status_rc=-1;

@@ -17,8 +17,14 @@ static int OS04A10_HFR_WIDTH=1344, OS04A10_HFR_HEIGHT=760, OS04A10_HFR_FPS=60;
 #include <dlfcn.h>
 #include <sstream>
 #include <memory>
+#include <cmath>
+#include <sched.h>
+#include <sys/statvfs.h>
+#include "capture_health.hpp"
 #include "direct_venc.hpp"
+#include "frame_continuity.hpp"
 #include "vin_venc_queue.hpp"
+#include "vin_camera_settings.hpp"
 
 using namespace maix::middleware::maixcam2;
 static volatile sig_atomic_t stopped = 0;
@@ -78,6 +84,18 @@ static void save_registers(AX_SENSOR_REGISTER_FUNC_T *sns, const char *filename)
         out << address << ',' << value << ',' << rc << '\n';
     }
 }
+static bool parse_wb_gains(const char *text, std::array<float,4> &gains) {
+    std::istringstream input(text ? text : "");
+    std::string field;
+    for (size_t index=0; index<gains.size(); ++index) {
+        if (!std::getline(input,field,',')) return false;
+        char *end=nullptr;
+        const float value=std::strtof(field.c_str(),&end);
+        if (!end || *end || !std::isfinite(value) || value<0.0F || value>1.0F) return false;
+        gains[index]=value;
+    }
+    return !std::getline(input,field,',');
+}
 int main(int argc, char **argv) {
     int seconds = 10;
     bool hfr = true;
@@ -89,8 +107,11 @@ int main(int argc, char **argv) {
     unsigned venc_depth = 4;
     bool venc_worker = false;
     bool venc_copy = false;
+    bool realtime = false;
+    long max_mipi_errors = 0;
     int queue_depth = 0;
     const char *sensor_library = nullptr;
+    dart::CameraSettings camera_settings;
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--mode") && i+1<argc) {
             std::string mode=argv[++i];
@@ -109,6 +130,13 @@ int main(int argc, char **argv) {
         else if (!std::strcmp(argv[i], "--venc-retry")) venc_retry = true;
         else if (!std::strcmp(argv[i], "--venc-worker")) venc_worker = true;
         else if (!std::strcmp(argv[i], "--venc-copy")) {venc_copy=true;venc_worker=true;}
+        else if (!std::strcmp(argv[i], "--realtime")) realtime = true;
+        else if (!std::strcmp(argv[i], "--max-mipi-errors") && i+1 < argc) {
+            char *end=nullptr;
+            const long value=std::strtol(argv[++i],&end,10);
+            if (*end || value<0 || value>1000) return 2;
+            max_mipi_errors=value;
+        }
         else if (!std::strcmp(argv[i], "--venc-depth") && i+1<argc) {
             const std::string value=argv[++i];
             if(value!="4" && value!="8")return 2;
@@ -126,14 +154,34 @@ int main(int argc, char **argv) {
             queue_depth=static_cast<int>(value);
         }
         else if (!std::strcmp(argv[i], "--sensor-lib") && i+1 < argc) sensor_library = argv[++i];
+        else if (!std::strcmp(argv[i], "--exposure-us") && i+1 < argc) {
+            char *end=nullptr;
+            const long value=std::strtol(argv[++i],&end,10);
+            if (*end || value<1 || value>1000000) return 2;
+            camera_settings.exposure_us=static_cast<int>(value);
+        }
+        else if (!std::strcmp(argv[i], "--gain") && i+1 < argc) {
+            char *end=nullptr;
+            const long value=std::strtol(argv[++i],&end,10);
+            if (*end || value<0 || value>65535) return 2;
+            camera_settings.gain=static_cast<int>(value);
+        }
+        else if (!std::strcmp(argv[i], "--wb-gains") && i+1 < argc) {
+            camera_settings.manual_white_balance=true;
+            if (!parse_wb_gains(argv[++i],camera_settings.white_balance_gain)) return 2;
+        }
+        else if (!std::strcmp(argv[i], "--auto-wb")) camera_settings.manual_white_balance=false;
         else if (!std::strcmp(argv[i], "--seconds") && i+1 < argc) {
             char *end = nullptr;
             long value = std::strtol(argv[++i], &end, 10);
-            if (*end || value < 1 || value > 1800) return 2;
+            if (*end || value < 1 || value > 600) return 2;
             seconds = static_cast<int>(value);
-        } else { std::cerr << "usage: capture [--hfr] [--seconds 1..1800] [--sensor-lib path] [--sample-frame] [--nv21]\n"; return 2; }
+        } else { std::cerr << "usage: direct_record --mode full180 --record --sensor-lib path [--seconds 1..600] [--exposure-us N] [--gain N] [--wb-gains R,Gr,Gb,B|--auto-wb] [--sample-frame] [--realtime] [--max-mipi-errors N]\n"; return 2; }
     }
-    if (!record_video || seconds>30) return 2;
+    camera_settings.width=OS04A10_HFR_WIDTH;
+    camera_settings.height=OS04A10_HFR_HEIGHT;
+    camera_settings.fps=OS04A10_HFR_FPS;
+    if (!record_video || seconds>600) return 2;
     if (!queue_depth) queue_depth = nv21 ? 4 : 16;
     if (hfr && OS04A10_HFR_WIDTH > 640 && queue_depth != 4) {
         std::cerr << "Full-array probes require --queue-depth 4 with vendor-sized pools\n";
@@ -151,6 +199,7 @@ int main(int argc, char **argv) {
     records.reserve(static_cast<size_t>(seconds + 1) * 400);
     size_t acquire_errors = 0, release_errors = 0, worker_queue_rejected = 0;
     int rc = 0;
+    bool storage_low = false;
     try {
         if (!sensor_library) return 2;
         void *official_handle=dlopen(sensor_library,RTLD_NOW|RTLD_GLOBAL);
@@ -247,6 +296,7 @@ int main(int argc, char **argv) {
         }
         std::cout << "chip_id=0x" << std::hex << chip_id << std::dec
                   << " expected_raw=" << expected_w << 'x' << expected_h << '\n';
+        apply_vin_camera_settings(camera_settings,cam.ptSnsHdl[0]);
         std::ifstream maps("/proc/self/maps");
         std::ofstream("loaded_maps.txt") << maps.rdbuf();
         AX_VIN_DUMP_ATTR_T dump = {};
@@ -254,9 +304,21 @@ int main(int argc, char **argv) {
         if (!nv21 && AX_VIN_SetPipeDumpAttr(0, AX_VIN_PIPE_DUMP_NODE_IFE, AX_VIN_DUMP_QUEUE_TYPE_DEV, &dump)) return 4;
         save_proc("_before.txt");
         save_registers(cam.ptSnsHdl[0], "registers_before.csv");
-        DirectVenc encoder(expected_w,expected_h,OS04A10_HFR_FPS,venc_retry,venc_fps,venc_depth);
+        DirectVenc encoder(expected_w,expected_h,OS04A10_HFR_FPS,venc_retry,venc_fps,venc_depth,static_cast<size_t>(seconds + 1) * 400,200000);
         std::unique_ptr<VinVencQueue> sender;
         if(venc_worker)sender=std::make_unique<VinVencQueue>(encoder,venc_copy);
+        const int original_policy=sched_getscheduler(0);
+        sched_param original_priority={};
+        if(original_policy<0 || sched_getparam(0,&original_priority))
+            throw std::runtime_error("Cannot read acquisition scheduler");
+        if(realtime) {
+            sched_param priority={};priority.sched_priority=10;
+            if(sched_setscheduler(0,SCHED_FIFO,&priority))
+                throw std::runtime_error("Cannot set acquisition SCHED_FIFO");
+        }
+        std::ofstream("scheduler.txt") << "policy=" << sched_getscheduler(0)
+            << " priority=" << (realtime ? 10 : original_priority.sched_priority)
+            << " realtime_requested=" << realtime << '\n';
         const auto start = now_us();
         const auto measurement_start = start + 2000000;
         const auto end = measurement_start + static_cast<uint64_t>(seconds) * 1000000;
@@ -265,6 +327,8 @@ int main(int argc, char **argv) {
         std::vector<Health> health_records;
         health_records.reserve(seconds+2);
         auto next_health = measurement_start;
+        dart::FrameContinuity continuity;
+        dart::CaptureHealthPolicy health_policy(max_mipi_errors);
         while (!stopped && !maix::app::need_exit() && !encoder.failed && (!sender || !sender->failed) && now_us() < end) {
             AX_IMG_INFO_T img = {};
             const auto result = nv21 ? AX_VIN_GetYuvFrame(0, AX_VIN_CHN_ID_MAIN, &img, 200) :
@@ -309,16 +373,28 @@ int main(int argc, char **argv) {
             if (nv21 && record.format != AX_FORMAT_YUV420_SEMIPLANAR) { rc = 6; break; }
             if (stamp >= measurement_start && stamp < end) {
                 if (records.size() == records.capacity()) { rc = 7; break; }
-                if (!records.empty() && (record.seq != records.back().seq+1 || record.pts<=records.back().pts)) {
-                    records.push_back(record); rc=10; break;
-                }
+                continuity.observe(record.seq,record.pts);
                 records.push_back(record);
+                // A forward sequence gap means the application missed input frames,
+                // but every retained frame and encoded packet is still valid. Keep
+                // recording and report the exact loss. Duplicate/backward sequence
+                // numbers or non-increasing PTS remain fatal ordering faults.
+                if(continuity.fatal()) {rc=10;break;}
                 if (stamp>=next_health) {
                     auto state=health(cam.ptSnsHdl[0],stamp-measurement_start);
                     health_records.push_back(state);
+                    struct statvfs disk = {};
+                    if (statvfs(".", &disk) != 0 ||
+                        static_cast<uint64_t>(disk.f_bavail) * disk.f_frsize < 512ULL * 1024 * 1024) {
+                        storage_low = true;
+                        std::cerr << "Recording stopped: free space below 512 MiB or query failed\n";
+                        rc = 13;
+                        break;
+                    }
+                    health_policy.observe(state.temperature,state.mipi_errors);
                     next_health=stamp+1000000;
                     // Datasheet operating junction ceiling is 85 C; stop with 5 C headroom.
-                    if (state.temperature>=80 || state.mipi_errors>0) { rc=9; break; }
+                    if (health_policy.fatal()) { rc=9; break; }
                     if (health_records.size()%10==0) {
                         std::ofstream progress("progress.json");
                         progress << "{\"elapsed_s\":" << state.elapsed_us/1e6
@@ -328,11 +404,16 @@ int main(int argc, char **argv) {
                 }
             }
         }
+        if(realtime && sched_setscheduler(0,original_policy,&original_priority)) rc=11;
         if(sender) {sender->finish();release_errors+=sender->release_errors;
             if(sender->failed || sender->accepted!=sender->released)rc=12;}
         encoder.finish();
         if(sender && sender->close_pool())rc=12;
         if(encoder.failed || encoder.submitted!=records.size() || encoder.packets!=records.size())rc=12;
+        const auto final_health=health(cam.ptSnsHdl[0],now_us()-measurement_start);
+        health_records.push_back(final_health);
+        health_policy.observe(final_health.temperature,final_health.mipi_errors);
+        if(!rc && health_policy.fatal())rc=9;
         save_proc("_after.txt");
         save_registers(cam.ptSnsHdl[0], "registers_after.csv");
         dump.bEnable = AX_FALSE;
@@ -364,7 +445,22 @@ int main(int argc, char **argv) {
                 <<",\"encoder_queue_full_events\":"<<encoder.queue_full_events<<",\"encoder_retry\":"<<(venc_retry?"true":"false")
                 <<",\"encoder_worker\":"<<(venc_worker?"true":"false")<<",\"encoder_worker_high_water\":"<<(sender?sender->high_water:0)
                 <<",\"encoder_input_copy\":"<<(venc_copy?"true":"false")
+                << ",\"encoder_fifo_depth\":" << venc_depth
                 << ",\"queue_depth\":" << queue_depth
+                << ",\"sequence_gap_events\":" << continuity.sequence_gap_events
+                << ",\"sequence_missing\":" << continuity.sequence_missing
+                << ",\"sequence_duplicates\":" << continuity.sequence_duplicates
+                << ",\"sequence_backwards\":" << continuity.sequence_backwards
+                << ",\"pts_nonincreasing\":" << continuity.pts_nonincreasing
+                << ",\"continuity_ok\":" << (continuity.perfect() ? "true" : "false")
+                << ",\"realtime\":" << (realtime ? "true" : "false")
+                << ",\"temperature_max_c\":" << health_policy.temperature_max_c
+                << ",\"temperature_limit_c\":" << health_policy.temperature_limit_c
+                << ",\"mipi_errors_max\":" << health_policy.mipi_errors_max
+                << ",\"mipi_error_limit\":" << health_policy.mipi_error_limit
+                << ",\"recovered_mipi_error\":" << (health_policy.recovered_mipi_error() ? "true" : "false")
+                << ",\"health_failure\":\"" << health_policy.failure_reason() << "\""
+                << ",\"storage_low_or_query_failed\":" << (storage_low ? "true" : "false")
                 << ",\"sample_saved\":" << (sampled ? "true" : "false")
                 << ",\"exit_code\":" << rc << ",\"interrupted\":" << (stopped ? "true" : "false") << "}\n";
         std::cout << (nv21 ? "nv21_frames=" : "raw_frames=") << records.size() << " monotonic_fps=" << fps << " result=" << rc << '\n';

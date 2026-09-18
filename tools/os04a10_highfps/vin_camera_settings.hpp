@@ -15,6 +15,8 @@ static void apply_vin_camera_settings(const dart::CameraSettings &c, AX_SENSOR_R
     if(c.exposure_us>=1000000/c.fps) throw std::runtime_error("exposure exceeds source frame period");
     auto shutter_matches=[&](const AX_ISP_IQ_AE_PARAM_T &p){return !p.nEnable &&
         std::abs(static_cast<double>(p.tExpManual.nShutter)-c.exposure_us)<=std::ceil(row_us);};
+    auto gain_matches=[&](const AX_ISP_IQ_AE_PARAM_T &p){return c.gain<=0 ||
+        (!p.nEnable && p.tExpManual.nAGain==static_cast<AX_U32>(c.gain));};
     AX_ISP_IQ_AE_PARAM_T ae{};
     if(AX_ISP_IQ_GetAeParam(0,&ae)) throw std::runtime_error("GetAeParam failed");
     if(c.exposure_us>0) {
@@ -25,14 +27,16 @@ static void apply_vin_camera_settings(const dart::CameraSettings &c, AX_SENSOR_R
     if(AX_ISP_IQ_SetAeParam(0,&ae) || AX_ISP_IQ_GetAeParam(0,&ae))
         throw std::runtime_error("Set/readback AE failed");
     // ISP updates may be queued for a subsequent frame. Bound readback settling.
-    for(int retry=0;c.exposure_us>0 && retry<20 &&
-        !shutter_matches(ae);++retry) {
+    for(int retry=0;retry<20 &&
+        ((c.exposure_us>0 && !shutter_matches(ae)) || !gain_matches(ae));++retry) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         if(AX_ISP_IQ_GetAeParam(0,&ae)) throw std::runtime_error("AE settling readback failed");
     }
-    if(c.exposure_us>0 && !shutter_matches(ae)) {
-        std::cerr<<"AE readback enable="<<static_cast<int>(ae.nEnable)<<" shutter="<<ae.tExpManual.nShutter<<" requested="<<c.exposure_us<<'\n';
-        throw std::runtime_error("AE shutter readback mismatch");
+    if((c.exposure_us>0 && !shutter_matches(ae)) || !gain_matches(ae)) {
+        std::cerr<<"AE readback enable="<<static_cast<int>(ae.nEnable)
+                 <<" shutter="<<ae.tExpManual.nShutter<<" requested_shutter="<<c.exposure_us
+                 <<" again="<<ae.tExpManual.nAGain<<" requested_again="<<c.gain<<'\n';
+        throw std::runtime_error("AE shutter/gain readback mismatch");
     }
     AX_ISP_IQ_AWB_PARAM_T wb{};
     if(AX_ISP_IQ_GetAwbParam(0,&wb)) throw std::runtime_error("GetAwbParam failed");
@@ -59,7 +63,7 @@ static void apply_vin_camera_settings(const dart::CameraSettings &c, AX_SENSOR_R
     }
     if(!wb_matches()) throw std::runtime_error("AWB gain readback mismatch");
     std::ofstream("camera_settings.json")<<"{\"ae_enabled\":"<<static_cast<int>(ae.nEnable)
-      <<",\"requested_shutter_us\":"<<c.exposure_us<<",\"sensor_row_us_nominal\":"<<row_us<<",\"manual_shutter_us\":"<<ae.tExpManual.nShutter<<",\"manual_again_raw\":"<<ae.tExpManual.nAGain
+      <<",\"requested_shutter_us\":"<<c.exposure_us<<",\"sensor_row_us_nominal\":"<<row_us<<",\"manual_shutter_us\":"<<ae.tExpManual.nShutter<<",\"requested_again_raw\":"<<c.gain<<",\"manual_again_raw\":"<<ae.tExpManual.nAGain
       <<",\"awb_enabled\":"<<static_cast<int>(wb.nEnable)<<",\"wb_raw\":["<<wb.tManualParam.tGain.nGainR<<','
       <<wb.tManualParam.tGain.nGainGr<<','<<wb.tManualParam.tGain.nGainGb<<','<<wb.tManualParam.tGain.nGainB
       <<"],\"calibrated\":false}\n";

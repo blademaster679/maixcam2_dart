@@ -1,0 +1,21 @@
+id: dart_data_recorder
+name: Dart Data Recorder
+name[zh]: 飞镖数据录制
+version: 0.4.2
+author: RoboMaster Team
+desc: Tunable OS04A10 full-view 180fps data recorder
+desc[zh]: 可触摸调参的OS04A10全视野180帧离线录制程序
+files:
+  recorderctl.py: recorderctl.py
+  main.sh: main.sh
+  recorder.conf: recorder.conf
+  confirm_start.py: confirm_start.py
+  show_status.py: show_status.py
+  direct_record: direct_record
+  libsns_os04a10.so: libsns_os04a10.so
+  libms_asr_ax630c.so: libms_asr_ax630c.so
+  libasound.so.2: libasound.so.2
+  libatopology.so.2: libatopology.so.2
+  libdatachannel.so: libdatachannel.so
+  libonnxruntime.so.1: libonnxruntime.so.1
+  libtinyalsa.so.2: libtinyalsa.so.2

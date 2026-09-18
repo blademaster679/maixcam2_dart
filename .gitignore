@@ -5,7 +5,6 @@
 /cmake-build-*/
 /out/
 /dist/
-/reports/generated/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
@@ -29,33 +28,15 @@ CMakeUserPresets.json
 *.elf
 /dart_green_detect
 
-# Captured and generated vision data. Keep Markdown test reports tracked.
-/recordings/**/*.mp4
-/recordings/**/*.avi
-/recordings/**/*.mov
-/recordings/**/*.mkv
-/recordings/**/*.jsonl
-/recordings/**/*.jpg
-/recordings/**/*.jpeg
-/recordings/**/*.png
-/recordings/**/trials/
-/recordings/**/results*/
-/recordings/**/TEST_REPORT*.md
+# Local test reports, recordings and generated evidence (including summaries).
+# Keep only the artifact storage policy in Git; source tests remain versioned.
+/reports/
+/recordings/
+/artifacts/*
+!/artifacts/README.md
 
-# Large/local capture artifacts. Keep reports, summaries, checksums and small
-# report figures versionable; see artifacts/README.md for separate storage.
-/artifacts/**/*.mp4
-/artifacts/**/*.avi
-/artifacts/**/*.mov
-/artifacts/**/*.mkv
-/artifacts/**/*.h264
-/artifacts/**/*.h265
-/artifacts/**/*.raw
-/artifacts/**/*.nv12
-/artifacts/**/*.nv21
-/artifacts/**/*.zip
-/artifacts/**/*.tar.gz
-/artifacts/**/*.tgz
+# Downloaded hardware datasheets; keep authored design documents versioned.
+/docs/*.[pP][dD][fF]
 
 # Private/large training data and model artifacts. Keep contracts/templates.
 /datasets/
@@ -70,8 +51,6 @@ CMakeUserPresets.json
 /.maixpy/
 *.log
 *.err
-/reports/*.json
-/reports/*.jsonl
 *.pid
 *.tmp
 *.bak
@@ -95,3 +74,7 @@ venv/
 *~
 .DS_Store
 Thumbs.db
+
+# Locally supplied AIC8800 Wi-Fi vendor SDK (extracted source and archive)
+/aic8800d_linux_sdk_V5.0_2026_0509_2195ae36(9) (7)/
+/aic8800d_linux_sdk_V5.0_2026_0509_2195ae36(9) (7).7z

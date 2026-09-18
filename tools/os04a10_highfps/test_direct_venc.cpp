@@ -10,6 +10,7 @@ static std::deque<AX_VIDEO_FRAME_INFO_T> pending;
 static AX_VENC_CHN_ATTR_T config;
 static std::atomic<int> attempts{0};
 static int mode=0;
+static std::chrono::steady_clock::time_point retry_start;
 static std::map<unsigned long long,unsigned> releases;
 static std::vector<unsigned char> input_pixels(640*360*3/2),output_pixels(input_pixels.size());
 static bool invalidated=false,flushed=false,fail_invalidate=false;
@@ -24,12 +25,12 @@ AX_S32 AX_VENC_StartRecvFrame(VENC_CHN,const AX_VENC_RECV_PIC_PARAM_T*) {return 
 AX_S32 AX_VENC_StopRecvFrame(VENC_CHN) {return 0;}
 AX_S32 AX_VENC_SendFrame(VENC_CHN,const AX_VIDEO_FRAME_INFO_T *p,AX_S32) {
  int count=++attempts;
- if(mode==1 || (mode==0 && count<=2))return AX_ERR_VENC_QUEUE_FULL;
+ if((mode==5 && std::chrono::steady_clock::now()-retry_start<std::chrono::milliseconds(40)) || mode==1 || (mode==0 && count<=2))return AX_ERR_VENC_QUEUE_FULL;
  if(mode==2)return AX_ERR_VENC_ILLEGAL_PARAM;
  std::lock_guard<std::mutex> lock(guard);pending.push_back(*p);return 0;
 }
 AX_S32 AX_VENC_GetStream(VENC_CHN,AX_VENC_STREAM_T *p,AX_S32) {
- std::this_thread::sleep_for(std::chrono::milliseconds(1));
+ if(mode!=4)std::this_thread::sleep_for(std::chrono::milliseconds(1));
  std::lock_guard<std::mutex> lock(guard);
  if(pending.empty())return AX_ERR_VENC_BUF_EMPTY;
  auto f=pending.front();pending.pop_front();static AX_U8 data[1]={0};
@@ -54,6 +55,10 @@ int main() {
  {DirectVenc encoder(640,360,360,true);assert(encoder.send(frame)==0);encoder.finish();assert(attempts==3);assert(encoder.queue_full_events==2);assert(encoder.submitted==1 && encoder.packets==1 && !encoder.failed);}
  attempts=0;mode=1;
  {DirectVenc encoder(640,360,360,true);auto start=std::chrono::steady_clock::now();assert(encoder.send(frame)==AX_ERR_VENC_QUEUE_FULL);auto ms=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-start).count();encoder.finish();assert(ms>=20 && ms<1000);assert(encoder.submitted==0 && encoder.send_errors==1);}
+ attempts=0;mode=5;retry_start=std::chrono::steady_clock::now();
+ {DirectVenc encoder(640,360,360,true,0,8,12000,200000);assert(encoder.send(frame)==0);encoder.finish();assert(encoder.queue_full_events>0 && encoder.submitted==1 && encoder.packets==1 && !encoder.failed);}
+ attempts=0;mode=1;
+ {DirectVenc encoder(640,360,360,true,0,8,12000,200000);auto start=std::chrono::steady_clock::now();assert(encoder.send(frame)==AX_ERR_VENC_QUEUE_FULL);auto ms=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-start).count();encoder.finish();assert(ms>=200 && ms<1000 && encoder.submitted==0);}
  attempts=0;mode=2;
  {DirectVenc encoder(640,360,360,true);assert(encoder.send(frame)==AX_ERR_VENC_ILLEGAL_PARAM);encoder.finish();assert(attempts==1 && encoder.submitted==0);}
  for(int error_mode:{0,2}) {
@@ -81,6 +86,15 @@ int main() {
  assert(pool_destroys==1);
  mode=3;attempts=0;
  {DirectVenc encoder(640,360,360,true,180,8);assert(config.stVencAttr.u8InFifoDepth==8 && config.stVencAttr.u8OutFifoDepth==8);assert(encoder.send(frame)==0);encoder.finish();assert(encoder.packets==1 && !encoder.failed);}
+ mode=4;attempts=0;
+ {DirectVenc encoder(1344,760,180,false,0,8,601*400);
+  for(unsigned i=0;i<108100;++i) {frame.stVFrame.u64SeqNum=i;assert(encoder.send(frame)==0);}
+  encoder.finish();assert(encoder.submitted==108100 && encoder.packets==108100 && !encoder.failed);
+  std::ifstream log("venc_send.csv");std::string line;size_t lines=0;
+  while(std::getline(log,line))++lines;
+  assert(lines==108101);
+ }
+ std::cout<<"PASS: ten-minute frame volume retains all send metadata beyond previous 12000-frame limit\n";
  std::cout<<"PASS: transient full retries same frame once; persistent full bounded; other errors not retried\n";
  std::cout<<"PASS: worker owns accepted VIN frames only; releases all frames once after success, overload, or encoder failure\n";
  std::cout<<"PASS: user-pool copy preserves pixels and frame identity, performs DMA cache operations, and cleans up on error\n";

@@ -1,4 +1,0 @@
-{
-  "sensor_sha256": "25f1d2c4e9fdef213dca3fdecf09f98a61d9a52c0704ade31cf6070aeab5bb4c  /opt/lib/libsns_os04a10.so",
-  "launcher": "daemon=running\nlauncher=running\nautostart=none"
-}

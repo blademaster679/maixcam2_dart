@@ -111,6 +111,8 @@ int main(int argc, char **argv) {
     bool nv21 = false;
     bool burst = false;
     bool realtime = false;
+    bool observe_gaps = false;
+    bool continuity_failed = false, receiver_failed = false;
     unsigned itp_depth = 0;
     int queue_depth = 0;
     const char *sensor_library = nullptr;
@@ -135,6 +137,7 @@ int main(int argc, char **argv) {
         else if (!std::strcmp(argv[i], "--nv21")) nv21 = true;
         else if (!std::strcmp(argv[i], "--burst")) burst = true;
         else if (!std::strcmp(argv[i], "--realtime")) realtime = true;
+        else if (!std::strcmp(argv[i], "--observe-gaps")) observe_gaps = true;
         else if (!std::strcmp(argv[i], "--itp-depth") && i+1<argc) {
             std::string value=argv[++i];if(value!="1" && value!="4" && value!="8") return 2;
             itp_depth=std::stoul(value);
@@ -411,7 +414,8 @@ int main(int argc, char **argv) {
 #endif
                 if (records.size() == records.capacity()) { rc = 7; break; }
                 if (!records.empty() && (record.seq != records.back().seq+1 || record.pts<=records.back().pts)) {
-                    records.push_back(record); rc=10; break;
+                    continuity_failed = true;
+                    if (!observe_gaps) { records.push_back(record); rc=10; break; }
                 }
 #ifdef DART_BUSINESS_CAPTURE
                 if(records.size()<2) records.push_back(record); else records.back()=record;
@@ -425,7 +429,8 @@ int main(int argc, char **argv) {
                     health_records.push_back(state);
                     next_health=stamp+1000000;
                     // Datasheet operating junction ceiling is 85 C; stop with 5 C headroom.
-                    if (state.temperature>=80 || state.mipi_errors>0) { rc=9; break; }
+                    if (state.mipi_errors>0) receiver_failed = true;
+                    if (state.temperature>=80 || (state.mipi_errors>0 && !observe_gaps)) { rc=9; break; }
                     if (health_records.size()%10==0) {
                         #ifdef DART_BUSINESS_CAPTURE
                         auto &progress=business_progress;
@@ -491,6 +496,9 @@ int main(int argc, char **argv) {
         health_csv.flush();
         if (!health_csv) rc=11;
         if (records.size() < 2 && !rc) rc = 5;
+        // Observation completes the requested window but never turns faults into a pass.
+        if (!rc && continuity_failed) rc = 10;
+        if (!rc && receiver_failed) rc = 9;
         const double fps = records.size() > 1 ?
             (total_frames-1) * 1000000.0 / (records.back().mono - records.front().mono) : 0;
         std::ofstream summary("capture.json");
@@ -500,6 +508,9 @@ int main(int argc, char **argv) {
                 << ",\"acquire_errors\":" << acquire_errors << ",\"release_errors\":" << release_errors
                 << ",\"queue_depth\":" << queue_depth
                 << ",\"realtime\":" << (realtime ? "true" : "false")
+                << ",\"observe_gaps\":" << (observe_gaps ? "true" : "false")
+                << ",\"continuity_failed\":" << (continuity_failed ? "true" : "false")
+                << ",\"receiver_failed\":" << (receiver_failed ? "true" : "false")
                 << ",\"itp_depth_request\":" << itp_depth
                 << ",\"burst_recording\":" << (burst ? "true" : "false")
                 << ",\"burst_frames\":" << burst_frames

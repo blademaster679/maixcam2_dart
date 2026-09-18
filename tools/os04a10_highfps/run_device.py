@@ -30,7 +30,9 @@ def main():
     ap.add_argument('--direct-venc', action='store_true', help='Record VIN NV12 with asynchronous AX VENC, bypassing Camera/IVPS copies')
     ap.add_argument('--record', action='store_true', help='Record with the Camera API probe, maximum 30 seconds')
     ap.add_argument('--burst', action='store_true', help='Save one second of packed 640x360 NV21 in bounded RAM, then write after capture')
-    ap.add_argument('--realtime', action='store_true', help='Use SCHED_FIFO priority 10 for the isolated acquisition thread')
+    ap.add_argument('--realtime', action='store_true', help='Use SCHED_FIFO priority 10 for the isolated direct acquisition thread')
+    ap.add_argument('--max-mipi-errors', type=int, default=0,
+                    help='Direct-VENC only: retain up to this many recovered receiver errors')
     ap.add_argument('--venc-retry', action='store_true', help='Retry VENC queue-full on the same retained frame, bounded to 20ms')
     ap.add_argument('--venc-worker', action='store_true', help='Transfer VIN frame ownership to a bounded 32-image encoding worker')
     ap.add_argument('--itp-depth', type=int, choices=[1,4,8], help='Configure and read back the VIN ITP source queue depth')
@@ -39,7 +41,7 @@ def main():
     ap.add_argument('--venc-depth', type=int, choices=[4,8], help='Diagnostic VENC input/output FIFO depth, read back from SDK')
     ap.add_argument('--exercise-switch', action='store_true', help='Exercise Camera FPS/ROI/reopen APIs before measurement')
     ap.add_argument('--no-health', action='store_true', help='Camera diagnostic: omit in-loop health reads; retain before/after readback')
-    ap.add_argument('--observe-gaps', action='store_true', help='Collect the full Camera diagnostic window while retaining a nonzero gap result')
+    ap.add_argument('--observe-gaps', action='store_true', help='Collect the full capture diagnostic window despite recovered sequence/MIPI faults; retain a nonzero result')
     ap.add_argument('--gdb', action='store_true', help='Capture a diagnostic backtrace using the device debugger')
     ap.add_argument('--system-media-lib', action='store_true', help='Use the media library installed with the device firmware')
     ap.add_argument('--remote-root', choices=['/tmp','/root/os04a10-tests'], default='/tmp', help='Use device storage for large recordings/long-run metadata')
@@ -84,11 +86,15 @@ def main():
     if args.burst and (not official or args.official_mode!='crop360' or args.seconds!=1 or
                        not args.nv21 or args.camera_api or args.record or args.direct_venc):
         ap.error('--burst requires official crop360, --seconds 1 and --nv21')
-    if args.realtime and (not official or args.camera_api or args.direct_venc):
-        ap.error('--realtime currently supports the official direct capture probe')
+    if args.realtime and (not official or args.camera_api):
+        ap.error('--realtime supports official direct capture and direct-VENC recording, not Camera API')
     if args.itp_depth and (not official or args.camera_api or args.direct_venc):
         ap.error('--itp-depth currently supports the official direct capture probe')
     if args.venc_copy: args.venc_worker=True
+    if not 0 <= args.max_mipi_errors <= 1000:
+        ap.error('--max-mipi-errors must be in 0..1000')
+    if args.max_mipi_errors and not args.direct_venc:
+        ap.error('--max-mipi-errors is valid only with --direct-venc')
     if (args.venc_retry or args.venc_fps or args.venc_worker or args.venc_depth) and not args.direct_venc:
         ap.error('VENC diagnostics require --direct-venc')
     if args.venc_worker and args.official_mode!='crop360':
@@ -204,6 +210,7 @@ def main():
         if args.record: command += ['--record']
         if args.burst: command += ['--burst']
         if args.realtime: command += ['--realtime']
+        if args.max_mipi_errors: command += ['--max-mipi-errors',str(args.max_mipi_errors)]
         if args.itp_depth: command += ['--itp-depth',str(args.itp_depth)]
         if args.venc_retry: command += ['--venc-retry']
         if args.venc_worker: command += ['--venc-worker']
@@ -268,6 +275,7 @@ def main():
         'direct_venc':args.direct_venc, 'business':bool(args.business_config), 'business_idle':args.business_idle, 'business_stress':args.business_stress,
         'burst':args.burst,
         'realtime':args.realtime,
+        'max_mipi_errors':args.max_mipi_errors,
         'venc_retry':args.venc_retry,'venc_fps':args.venc_fps,
         'venc_depth':args.venc_depth,
         'venc_worker':args.venc_worker,
